@@ -1,0 +1,2 @@
+A Binance Futures trading client where you can add custom indicators by writing code or monitor trading signals by writing code. You can also get trading indicators or trading signals that others have published from the market, and you can also upload the indicator code or signal code you wrote to the market for others to use!
+一个币安合约交易客户端,在这里您可以通过编写代码添加自定义指标,或者通过编写代码监控交易信号.您也可以从市场上获取别人公开的交易指标或者交易信号,您也可以将您编写的指标代码或者信号代码上传到市场上供其他人使用!
