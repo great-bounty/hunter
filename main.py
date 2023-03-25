@@ -2,6 +2,7 @@ from pathlib import Path
 from example.SMASignal import SignalMonitor as SMASignal
 from example.ICTSignal import SignalMonitor as ICTSignal
 from binance.um_futures import UMFutures
+from py_app.utils.logger_tools import logger
 import os
 import certifi
 os.environ['SSL_CERT_FILE'] = certifi.where()
@@ -23,7 +24,7 @@ if __name__ == '__main__':
     # 监测信号
     signal_info = sma_signal.check_signal(
         symbol=symbol, interval=interval, klines=klines)
-    print(signal_info)
+    logger.info(signal_info)
 
     # 保存图片
     project_dir = Path().resolve()
