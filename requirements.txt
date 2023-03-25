@@ -1,4 +1,5 @@
 binance-futures-connector
+concurrent_log_handler
 numpy
 pandas
 pandas-ta

@@ -4,9 +4,9 @@ import numpy as np
 import pandas_ta as ta
 import math
 import copy
-import logging
 import time
 from datetime import *
+from py_app.utils.logger_tools import logger
 import plotly.graph_objects as pygo
 from plotly import subplots
 
