@@ -42,6 +42,7 @@ class TVIndicator:
         sma_list = sma_list.tolist()
         date_list = date_list[-len(sma_list):]
         path = []
+
         for index in range(0, len(sma_list)):
             t_s = date_list[index]
             price = sma_list[index]
@@ -49,20 +50,23 @@ class TVIndicator:
                 'time':  int(pd.to_datetime(t_s).value / 10 ** 9),
                 'value': float(price),
             })
+        path.append(path[-1]) # 最后两个值相等则表示绘制结束
         sma_line_info = {
             'shape_name': f'sma_{length}_line',
             'shape_type': 'multi_point_shape',
             'points': path,
             'options': {
-                'shape': 'sine_line',
+                'shape': 'path',
                 'lock': True,
                 'disableSelection': True,
                 'disableSave': True,
                 'disableUndo': True,
                 'overrides': {
-                    'linecolor': '#0000FF',
-                    'linewidth': 2,
-                    'transparency': 80
+                    'lineColor': '#0000FF',
+                    'lineWidth': 1,
+                    'lineStyle': 0,
+                    'transparency': 80,
+                    'rightEnd': 0
                 }
             }
         }

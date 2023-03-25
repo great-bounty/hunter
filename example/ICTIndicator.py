@@ -915,7 +915,7 @@ class TVIndicator:
                             'color': yellow_color,
                             'borderColor': yellow_color,
                             'borderWidth': 0,
-                            'linewidth': 0,
+                            'lineWidth': 0,
                             'drawBorder': False,
                             'transparency': 85,
                             'backgroundTransparency': 85,
@@ -941,7 +941,7 @@ class TVIndicator:
                             'color': yellow_color,
                             'borderColor': yellow_color,
                             'borderWidth': 0,
-                            'linewidth': 0,
+                            'lineWidth': 0,
                             'drawBorder': False,
                             'transparency': 90,
                             'backgroundTransparency': 90,
@@ -983,7 +983,7 @@ class TVIndicator:
                             'color': red_color,
                             'borderColor': red_color,
                             'borderWidth': 0,
-                            'linewidth': 0,
+                            'lineWidth': 0,
                             'drawBorder': False,
                             'transparency': 85,
                             'backgroundTransparency': 85,
@@ -1009,7 +1009,7 @@ class TVIndicator:
                             'color': green_color,
                             'borderColor': green_color,
                             'borderWidth': 0,
-                            'linewidth': 0,
+                            'lineWidth': 0,
                             'drawBorder': False,
                             'transparency': 90,
                             'backgroundTransparency': 90,
@@ -1041,7 +1041,7 @@ class TVIndicator:
                 'disableUndo': True,
                 'overrides': {
                     'linecolor': '#0000FF',
-                    'linewidth': 2,
+                    'lineWidth': 2,
                     'transparency': 80
                 }
             }

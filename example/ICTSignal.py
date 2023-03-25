@@ -1044,7 +1044,7 @@ class SignalMonitor:
                             'color': yellow_color,
                             'borderColor': yellow_color,
                             'borderWidth': 0,
-                            'linewidth': 0,
+                            'lineWidth': 0,
                             'drawBorder': False,
                             'transparency': 85,
                             'backgroundTransparency': 85,
@@ -1070,7 +1070,7 @@ class SignalMonitor:
                             'color': yellow_color,
                             'borderColor': yellow_color,
                             'borderWidth': 0,
-                            'linewidth': 0,
+                            'lineWidth': 0,
                             'drawBorder': False,
                             'transparency': 90,
                             'backgroundTransparency': 90,
@@ -1112,7 +1112,7 @@ class SignalMonitor:
                             'color': red_color,
                             'borderColor': red_color,
                             'borderWidth': 0,
-                            'linewidth': 0,
+                            'lineWidth': 0,
                             'drawBorder': False,
                             'transparency': 85,
                             'backgroundTransparency': 85,
@@ -1138,7 +1138,7 @@ class SignalMonitor:
                             'color': green_color,
                             'borderColor': green_color,
                             'borderWidth': 0,
-                            'linewidth': 0,
+                            'lineWidth': 0,
                             'drawBorder': False,
                             'transparency': 90,
                             'backgroundTransparency': 90,
@@ -1169,8 +1169,9 @@ class SignalMonitor:
                 'disableSave': True,
                 'disableUndo': True,
                 'overrides': {
-                    'linecolor': '#0000FF',
-                    'linewidth': 2,
+                    'lineColor': '#0000FF',
+                    'lineWidth': 1,
+                    'lineStyle': 0,
                     'transparency': 80
                 }
             }
