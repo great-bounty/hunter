@@ -1,0 +1,6 @@
+binance-futures-connector
+numpy
+pandas
+pandas-ta
+plotly
+kaleido
