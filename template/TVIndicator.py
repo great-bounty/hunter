@@ -12,7 +12,7 @@ class TVIndicator:
     name: str = '' # 指标的名字(必选)
     version: str = '' # 指标的版本(Default: 1.0.0)
     deploy_version: str = '' # 指标支持的Hunter的最低版本(Default: 100.100.100)
-    detail_url: str = '' # 指标的详情页面,可为博文或视频地址(可选)
+    detail_url: str = '' # 指标的详情页面,最好是指标的介绍和用法,可为博文或视频地址(可选)
     open_source: str = 'YES' # 是否开源, YES其他用户可以复制源码, NO其他用户不可以复制源码(Default: YES)
     indicator_params: dict = { # 指标里用的到参数
         "number": {
