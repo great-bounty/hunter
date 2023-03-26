@@ -53,6 +53,17 @@ Hunter是一款基于Tradingview研发的,可以用Python自定义技术指标�
 1. 自定义指标的类名必须为 `TVIndicator`
 2. `TVIndicator`必须实现 `def tv_shape_infos(self, symbol: str, interval: str, klines: list):`函数
 3. `tv_shape_infos`必须返回Tradingview形状数据的数组
+4. 除了上面必须实现的函数外,您还可以为`TVIndicator`添加任意属性和方法
+
+关于调试:
+
+> 可用logger.info('xxx')输出调试日志,并在日志文件中查看
+>
+> 日志文件路径:
+>
+> windows日志文件路径:`安装目录/data/Hunter/Temp/tourist@signout.com/log`
+>
+> Mac/Linux日志文件路径:`/home/%USER%/Downloads/Hunter/Temp/tourist@signout.com/log`
 
 详见以下示例代码:
 
@@ -67,6 +78,7 @@ import copy
 import logging
 import time
 from datetime import *
+from py_app.utils.logger_tools import logger
 # 仅支持导入以上系统/第三方库,导入其他库,可能造成异常
 
 class TVIndicator:
@@ -111,6 +123,10 @@ class TVIndicator:
     		...
     		-------------------------------------------------------
     		return Tradingview的Shape信息的列表
+    		-------------------------------------------------------
+            **重要**:
+            "time": 需要精确到秒级,
+            "price": 需要经过强制类型转换float(price),否则会导致数据类型错误
     		'''
     		
         return []
@@ -219,6 +235,18 @@ def tv_shape_infos(self, symbol: str, interval: str, klines: list):
  >
  >  `def save_image(self, symbol: str, interval: str, klines: list, to_path: str):`函数
 
+   3.除了上面必须实现的函数外,您还可以为`SignalMonitor`添加任意属性和方法
+
+关于调试:
+
+> 可用logger.info('xxx')输出调试日志,并在日志文件中查看
+>
+> 日志文件路径:
+>
+> windows日志文件路径:`安装目录/data/Hunter/Temp/tourist@signout.com/log`
+>
+> Mac/Linux日志文件路径:`/home/%USER%/Downloads/Hunter/Temp/tourist@signout.com/log`
+
 详见以下示例代码:
 
 [自定义信号-示例代码下载](https://github.com/great-bounty/hunter.git)
@@ -232,6 +260,7 @@ import copy
 import logging
 import time
 from datetime import *
+from py_app.utils.logger_tools import logger
 import plotly.graph_objects as pygo
 from plotly import subplots
 # 仅支持导入以上系统/第三方库,导入其他库,可能造成异常
@@ -270,8 +299,8 @@ class SignalMonitor:
     	'''
     	symbol 当前交易对名字
     	interval 当前时间周期: 1s/1m/3m/5m/15m/30m/1h/2h/4h/6h/8h/12h/1d/3d/1w/1M
-    	klines K线数据列表: [[time, open, high, low, close, volume]...]
-    		-------------------------------------------------------
+    	klines K线数据列表: [[time, open, high, low, close, volume],...]
+    	-------------------------------------------------------
     	访问signal_params的示例:
     	number_value = self.signal_params['number']['value']
     	string_value = self.signal_params['string']['value']
@@ -489,6 +518,12 @@ K线多周期同时回放,可以完美的重现历史行情波动的快慢,直�
 }
 ```
 
+### 如何充值
+
+扫码(或复制重置地址)充值成功后,复制交易的哈希ID,并粘贴到输入框中,点击`确认充值`按钮即可到账!
+
+<iframe src="https://hunter.focuschance.com/config/files/videos/recharge.mp4" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" height="480px" sandbox></iframe>
+
 ## 交流群
 
 QQ交流群:`772598403`
@@ -506,6 +541,22 @@ QQ交流群:`772598403`
 ### Mac提示未信任的开发者怎么办?
 
 [Mac不能安装非信任应用的解决方法 打不开身份不明的开发者?文件已损坏? ](https://zhuanlan.zhihu.com/p/161341622)
+
+### Mac提示应用损坏无法打开?
+
+1. 将解压后的Hunter.app移动到`应用程序`目录
+
+2. 打开终端，输入以下命令：
+
+3. ```fallback
+   sudo xattr -rd com.apple.quarantine /Applications/Hunter.app
+   ```
+
+   然后按键盘的回车键（Enter），输入密码后按回车键即可完成！
+
+   好了，再看一下是不是可以打开APP了！
+
+   如果还是无法打开APP,可参考:[当Mac软件提示损坏时可以绕过公证或者在Mac本地为软件签名](https://lapulace.com/macOS_Notarization.html)
 
 ### 如何快速切换交易对?
 
