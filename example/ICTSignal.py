@@ -298,7 +298,11 @@ class SignalMonitor:
                 # 过滤掉比较小的FVG
                 fvg_dis = abs(high_2 - low_0)
                 body_dis = abs(open_1 - close_1)
-                if fvg_dis/body_dis < 0.5:
+                if body_dis == 0.0:
+                    body_dis = fvg_dis*0.1
+                else:
+                    pass
+                if fvg_dis/body_dis < 0.3:
                     continue
                 else:
                     pass
@@ -330,7 +334,11 @@ class SignalMonitor:
                 # 过滤掉比较小的FVG
                 fvg_dis = abs(low_2 - high_0)
                 body_dis = abs(open_1 - close_1)
-                if fvg_dis/body_dis < 0.5:
+                if body_dis == 0.0:
+                    body_dis = fvg_dis*0.1
+                else:
+                    pass
+                if fvg_dis/body_dis < 0.3:
                     continue
                 else:
                     pass
