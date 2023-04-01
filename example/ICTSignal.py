@@ -46,496 +46,572 @@ class SignalMonitor:
         return date_str
 
     def find_high_low_point_list(self, data_frame: pd.DataFrame, deep: int):
-        open_nums = data_frame['Open'].tolist()
         high_nums = data_frame['High'].tolist()
         low_nums = data_frame['Low'].tolist()
-        close_nums = data_frame['Close'].tolist()
-        date_nums = data_frame['Date'].tolist()
 
-        for count in range(0, deep):
-            open_nums.append(open_nums[-1])
-            close_nums.append(open_nums[-1])
-            high_nums.append(open_nums[-1])
-            low_nums.append(open_nums[-1])
-            date_nums.append(date_nums[-1])
+        high_nums_2 = data_frame['High'].tolist()
+        high_nums_2.reverse()
+        low_nums_2 = data_frame['Low'].tolist()
+        low_nums_2.reverse()
+        # 向前补全
 
+        high_nums_2.extend(high_nums)
+        high_nums = high_nums_2
+        low_nums_2.extend(low_nums)
+        low_nums = low_nums_2
+
+        # 定义每组元素个数
+        group_size = deep
+        # 使用列表推导式和切片将数组分割为二维数组
         high_point_list = []
+        for i in range(0, len(high_nums), group_size):
+            sub_list = high_nums[i:i+group_size]
+            max_value = max(sub_list)
+            for sub_index in range(0, len(sub_list)):
+                sub_value = sub_list[sub_index]
+                if sub_value == max_value:
+                    pass
+                else:
+                    sub_list[sub_index] = np.nan
+            high_point_list.extend(sub_list)
+
+        # 使用列表推导式和切片将数组分割为二维数组
         low_point_list = []
-        for k_index in range(0, len(high_nums)):
-            if k_index < deep:
-                high_point_list.append(np.nan)
-                low_point_list.append(np.nan)
-            elif k_index > (len(high_nums) - deep):
-                high_point_list.append(np.nan)
-                low_point_list.append(np.nan)
+        for i in range(0, len(low_nums), group_size):
+            sub_list = low_nums[i:i+group_size]
+            min_value = min(sub_list)
+            for sub_index in range(0, len(sub_list)):
+                sub_value = sub_list[sub_index]
+                if sub_value == min_value:
+                    pass
+                else:
+                    sub_list[sub_index] = np.nan
+            low_point_list.extend(sub_list)
+
+        same_point_list = []
+        hl_point_list = []
+        for index in range(0, len(high_point_list)):
+            h_value = high_point_list[index]
+            l_value = low_point_list[index]
+            if math.isnan(h_value) == False and  math.isnan(l_value): # 只是最高点
+                hl_point_list.append(h_value)
+                same_point_list.append(0)
+            elif math.isnan(h_value) and  math.isnan(l_value) == False: # 只是最低点
+                hl_point_list.append(l_value)
+                same_point_list.append(0)
+            else: # 最高点与最低点在同一根线上
+                hl_point_list.append(np.nan)
+                same_point_list.append(1)
+        # 解决冲突的点
+        for index in range(0, len(high_point_list)):
+            same_value = same_point_list[index]
+            if same_value == 1:
+                # 找到前一个非零点
+                pre_index = index
+                pre_value = np.nan
+                while pre_index > 0:
+                    pre_value = hl_point_list[pre_index]
+                    pre_index = pre_index - 1
+                    if math.isnan(pre_value):
+                        continue
+                    else:
+                        break
+                if math.isnan(pre_value):
+                    hl_point_list[index] = high_point_list[index]
+                else:
+                    pass
+                # 找到后一个非零点
+                next_index = index
+                next_value = np.nan
+                while next_index < len(hl_point_list):
+                    next_value = hl_point_list[next_index]
+                    next_index = next_index + 1
+                    if math.isnan(next_value):
+                        continue
+                    else:
+                        break
+                if math.isnan(next_value):
+                    hl_point_list[index] = high_point_list[index]
+                else:
+                    pass
+                if same_value < pre_value and same_value < next_value:
+                    hl_point_list[index] = low_point_list[index]
+                elif same_value > pre_value and same_value > next_value:
+                    hl_point_list[index] = high_point_list[index]
+                elif same_value > pre_value and same_value < next_value:
+                    hl_point_list[index] = high_point_list[index]
+                elif same_value < pre_value and same_value > next_value:
+                    hl_point_list[index] = low_point_list[index]
+                else:
+                    pass
             else:
-                date_ha = date_nums[k_index]
-                date_ha_str = self.getDateString(date_ha)
-                high_ha = high_nums[k_index]
-                low_ha = low_nums[k_index]
-                left_high = True
-                right_high = True
-                if date_ha_str == '2022-12-23 21:30:00':
-                    print(date_ha)
-                else:
+                pass
+        
+        count = 5
+        while count > 0:
+            count = count - 1
+            # 将间隔不够的高低点过滤掉
+            value_1 = np.nan
+            index_1 = 0
+            value_2 = np.nan
+            index_2 = 0
+            value_3 = np.nan
+            index_3 = 0
+            find_target = False
+            for index in range(0, len(hl_point_list)):
+                cur_value = hl_point_list[index]
+                if math.isnan(cur_value):
                     pass
-                for left_index in range(k_index - deep, k_index):
-                    left_high_ha = high_nums[left_index]
-                    if left_high_ha > high_ha:
-                        left_high = False
-                        break
-                    else:
-                        pass
-                for right_index in range(k_index, k_index + deep):
-                    right_high_ha = high_nums[right_index]
-                    if right_high_ha > high_ha:
-                        right_high = False
-                        break
-                    else:
-                        pass
-                if right_high and left_high:
-                    high_point_list.append(high_ha)
                 else:
-                    high_point_list.append(np.nan)
-
-                left_low = True
-                right_low = True
-                for left_index in range(k_index - deep, k_index):
-                    left_low_ha = low_nums[left_index]
-                    if left_low_ha < low_ha:
-                        left_low = False
-                        break
+                    if math.isnan(value_1):
+                        value_1 = cur_value
+                        index_1 = index
+                    elif math.isnan(value_2):
+                        value_2 = cur_value
+                        index_2 = index
+                    elif math.isnan(value_3):
+                        value_3 = cur_value
+                        index_3 = index
                     else:
-                        pass
-                for right_index in range(k_index, k_index + deep):
-                    right_low_ha = low_nums[right_index]
-                    if right_low_ha < low_ha:
-                        right_low = False
-                        break
-                    else:
-                        pass
-                if right_low and left_low:
-                    low_point_list.append(low_ha)
-                else:
-                    low_point_list.append(np.nan)
-        # 过滤
-        # print('high_point_list-->', high_point_list)
-        # print('low_point_list-->', low_point_list)
-        for count in range(0, 3):
-            pre_high_value = np.nan
-            pre_low_value = np.nan
-            pre_is_high = False
-            pre_high_index = np.nan
-            pre_is_low = False
-            pre_low_index = np.nan
-            for p_index in range(0, len(high_point_list)):
-                high_value = high_point_list[p_index]
-                low_value = low_point_list[p_index]
-                if low_value == 2.356:
-                    print('low_value-->', low_value)
-                else:
-                    pass
-                if math.isnan(high_value) == False and math.isnan(low_value) == False:
-                    if pre_is_high:
-                        if high_value > pre_high_value and low_value > pre_low_value:
-                            high_point_list[pre_high_index] = np.nan
-                        elif high_value < pre_high_value and low_value > pre_low_value:
-                            high_point_list[p_index] = np.nan
-                        elif high_value > pre_high_value and low_value < pre_low_value:
-                            high_point_list[p_index] = np.nan
-                        elif high_value < pre_high_value and low_value < pre_low_value:
-                            high_point_list[p_index] = np.nan
-                    if pre_is_low:
-                        if high_value > pre_high_value and low_value > pre_low_value:
-                            low_point_list[p_index] = np.nan
-                        elif high_value < pre_high_value and low_value > pre_low_value:
-                            low_point_list[p_index] = np.nan
-                        elif high_value > pre_high_value and low_value < pre_low_value:
-                            low_point_list[p_index] = np.nan
-                        elif high_value < pre_high_value and low_value < pre_low_value:
-                            low_point_list[pre_low_index] = np.nan
-                elif math.isnan(high_value) == False:
-                    if pre_is_high:
-                        if pre_high_value > high_value:
-                            high_point_list[p_index] = np.nan
+                        index_1 = index_2
+                        index_2 = index_3
+                        index_3 = index
+                        value_1 = value_2
+                        value_2 = value_3
+                        value_3 = cur_value
+                        if (index_3 - index_2) <= deep:# 间隔不足deep
+                            if value_1 >= value_2 and value_1 >= value_3:
+                                if value_2 <= value_3:
+                                    hl_point_list[index_3] = np.nan
+                                else:
+                                    hl_point_list[index_2] = np.nan
+                            elif value_1 <= value_2 and value_1 <= value_3:
+                                if value_2 < value_3:
+                                    hl_point_list[index_2] = np.nan
+                                else:
+                                    hl_point_list[index_3] = np.nan
+                            else:
+                                pass
                         else:
-                            high_point_list[pre_high_index] = np.nan
-                            pre_high_value = high_value
-                            pre_high_index = p_index
-                    else:
-                        pre_is_high = True
-                        pre_is_low = False
-                        pre_high_value = high_value
-                        pre_high_index = p_index
-                elif math.isnan(low_value) == False:
-                    if pre_is_low:
-                        if pre_low_value < low_value:
-                            low_point_list[p_index] = np.nan
-                        else:
-                            low_point_list[pre_low_index] = np.nan
-                            pre_low_value = low_value
-                            pre_low_index = p_index
-                    else:
-                        pre_is_high = False
-                        pre_is_low = True
-                        pre_low_value = low_value
-                        pre_low_index = p_index
-                else:
+                            pass
+            
+            # 将连续的高点或者连续的低点过滤掉
+            value_1 = np.nan
+            index_1 = 0
+            value_2 = np.nan
+            index_2 = 0
+            value_3 = np.nan
+            index_3 = 0
+            value_1_type = None
+            value_2_type = None
+            value_3_type = None
+            for index in range(0, len(hl_point_list)):
+                cur_value = hl_point_list[index]
+                if math.isnan(cur_value):
                     pass
-        high_point_list = high_point_list[:-deep]
-        low_point_list = low_point_list[:-deep]
-        return (high_point_list, low_point_list)
+                else:
+                    if math.isnan(value_1):
+                        value_1 = cur_value
+                        index_1 = index
+                    elif math.isnan(value_2):
+                        value_2 = cur_value
+                        index_2 = index
+                    elif math.isnan(value_3):
+                        value_3 = cur_value
+                        index_3 = index
+                    else:
+                        index_1 = index_2
+                        index_2 = index_3
+                        index_3 = index
+                        value_1 = value_2
+                        value_2 = value_3
+                        value_3 = cur_value
+                        if value_1 == high_nums[index_1]:
+                            value_1_type = 'high'
+                        elif value_1 == low_nums[index_1]:
+                            value_1_type = 'low'
+                        else:
+                            pass
+                        if value_2 == high_nums[index_2]:
+                            value_2_type = 'high'
+                        elif value_2 == low_nums[index_2]:
+                            value_2_type = 'low'
+                        else:
+                            pass
+                        if value_3 == high_nums[index_3]:
+                            value_3_type = 'high'
+                        elif value_3 == low_nums[index_3]:
+                            value_3_type = 'low'
+                        else:
+                            pass
+                        if value_1_type == value_2_type and value_1_type == 'high':
+                            if value_1 > value_2:
+                                hl_point_list[index_2] = np.nan
+                            else:
+                                hl_point_list[index_1] = np.nan
+                        elif value_2_type == value_3_type and value_2_type == 'high':
+                            if value_2 > value_3:
+                                hl_point_list[index_3] = np.nan
+                            else:
+                                hl_point_list[index_2] = np.nan
+                        elif value_1_type == value_2_type and value_1_type == 'low':
+                            if value_1 > value_2:
+                                hl_point_list[index_1] = np.nan
+                            else:
+                                hl_point_list[index_2] = np.nan
+                        elif value_2_type == value_3_type and value_2_type == 'low':
+                            if value_2 > value_3:
+                                hl_point_list[index_2] = np.nan
+                            else:
+                                hl_point_list[index_3] = np.nan
+                        else:
+                            pass
+        real_count = len(hl_point_list) // 2
+        hl_point_list = hl_point_list[real_count:]
 
-    def zigzag_line_point_list(self, high_point_list: list, low_point_list: list, date_nums: list):
+        return hl_point_list
 
-        date_nums = date_nums.tolist()
+    def zigzag_line_point_list(self, hl_point_list: list, data_frame: pd.DataFrame):
         zigzag_point_list = []
-        for p_index in range(0, len(high_point_list)):
-            high_value = high_point_list[p_index]
-            low_value = low_point_list[p_index]
-            date_value = date_nums[p_index]
-            if math.isnan(high_value) == False:
-                zigzag_point_list.append((date_value, high_value))
-            elif math.isnan(low_value) == False:
-                zigzag_point_list.append((date_value, low_value))
+        for p_index in range(0, len(hl_point_list)):
+            p_value = hl_point_list[p_index]
+            date_value = data_frame['Date'].iloc[p_index]
+            if math.isnan(p_value) == False:
+                zigzag_point_list.append((date_value, p_value))
             else:
                 pass
 
         return zigzag_point_list
 
-    def caculation_fvg_infos(self, data_frame: pd.DataFrame, break_down: bool = False):
-        date_nums = data_frame['Date']
-        open_nums = data_frame['Open']
-        high_nums = data_frame['High']
-        low_nums = data_frame['Low']
-        close_nums = data_frame['Close']
+    def find_fair_value_gap_infos(self, data_frame: pd.DataFrame):
+        date_nums = data_frame['Date'].tolist()
+        open_nums = data_frame['Open'].tolist()
+        high_nums = data_frame['High'].tolist()
+        low_nums = data_frame['Low'].tolist()
+        close_nums = data_frame['Close'].tolist()
         ohlc_infos = []
         min_price = 9999999999
         max_price = -9999999999
 
-        sub_date_0 = date_nums[0]
-        sub_date_0_str = self.getDateString(sub_date_0)
-        if sub_date_0_str == '2022-12-29 04:55:00':
-            print(sub_date_0_str)
-        else:
-            pass
-        for c_index in range(0, len(date_nums)):
-            ohlc_info = {
-                'o': open_nums[c_index],
-                'h': high_nums[c_index],
-                'l': low_nums[c_index],
-                'c': close_nums[c_index]
-            }
-            ohlc_infos.append(ohlc_info)
-            l_price = ohlc_info['l']
-            h_price = ohlc_info['h']
-            if l_price < min_price:
-                min_price = l_price
-            else:
-                pass
-            if h_price > max_price:
-                max_price = h_price
-            else:
-                pass
-
-        fvg_list = []
-        for c_index in range(1, len(ohlc_infos)-2):
-            ohlc_info_0 = ohlc_infos[c_index - 1]
-            o_price_0 = ohlc_info_0['o']
-            h_price_0 = ohlc_info_0['h']
-            l_price_0 = ohlc_info_0['l']
-            c_price_0 = ohlc_info_0['c']
-            sub_date_0 = date_nums[c_index - 1]
-            body_0 = math.fabs(o_price_0 - c_price_0)
-
-            ohlc_info_1 = ohlc_infos[c_index]
-            o_price_1 = ohlc_info_1['o']
-            c_price_1 = ohlc_info_1['c']
-            sub_date_1 = date_nums[c_index]
-            sub_date_1_str = self.getDateString(sub_date_1)
-            # print('sub_date_1_str---->', sub_date_1_str)
-            if sub_date_1_str == '2023-01-07 21:00:00':
-                print(sub_date_1_str)
-            else:
-                pass
-
-            body_1 = math.fabs(o_price_1 - c_price_1)
-            if body_0 > 0.0:
-                body_rate_10 = body_1 / body_0
-            else:
-                body_rate_10 = 100.0
-
-            ohlc_info_2 = ohlc_infos[c_index + 1]
-            o_price_2 = ohlc_info_2['o']
-            h_price_2 = ohlc_info_2['h']
-            l_price_2 = ohlc_info_2['l']
-            c_price_2 = ohlc_info_2['c']
-            body_2 = math.fabs(o_price_2 - c_price_2)
-
-            if body_2 > 0.0:
-                body_rate_12 = body_1 / body_2
-            else:
-                body_rate_12 = 100.0
-
-            if o_price_0 > c_price_0 and o_price_1 > c_price_1 and o_price_2 > c_price_2 and l_price_0 > h_price_2 and break_down == True:
-                # 向下突破的阴线
-                fvg_list.append({
-                    'index': c_index,
-                    'start_ts': sub_date_0,
-                    'high': l_price_0,
-                    'low': h_price_2,
-                    'type': 'supply'
-                })
-            elif o_price_0 < c_price_0 and o_price_1 < c_price_1 and o_price_2 < c_price_2 and h_price_0 < l_price_2 and break_down == False:
-                # 向上突破的阳线
-                fvg_list.append({
-                    'index': c_index,
-                    'start_ts': sub_date_0,
-                    'high': l_price_2,
-                    'low': h_price_0,
-                    'type': 'demand'
-                })
-            elif body_rate_10 > 1.5 and body_rate_12 > 1.5 and o_price_1 > c_price_1 and l_price_0 > h_price_2 and break_down == True:
-                # 大阴线形成的缺口
-                fvg_list.append({
-                    'index': c_index,
-                    'start_ts': sub_date_0,
-                    'high': l_price_0,
-                    'low': h_price_2,
-                    'type': 'supply'
-                })
-            elif body_rate_10 > 1.5 and body_rate_12 > 1.5 and o_price_1 < c_price_1 and h_price_0 < l_price_2 and break_down == False:
-                # 大阳线形成的缺口
-                fvg_list.append({
-                    'index': c_index,
-                    'start_ts': sub_date_0,
-                    'high': l_price_2,
-                    'low': h_price_0,
-                    'type': 'demand'
-                })
-            else:
-                pass
-        return fvg_list
-
-    def caculation_order_block_infos(self, data_frame: pd.DataFrame, pre_price_2_time: pd.Timestamp, pre_price_3_time: pd.Timestamp, break_price: float, break_down: bool):
-        sub_data_frame = data_frame.loc[pre_price_2_time:pre_price_3_time]
-        sub_date_nums = sub_data_frame['Date']
-        sub_open_nums = sub_data_frame['Open']
-        sub_high_nums = sub_data_frame['High']
-        sub_low_nums = sub_data_frame['Low']
-        sub_close_nums = sub_data_frame['Close']
-
-        ohlc_infos = []
-        min_price = 9999999999
-        max_price = -9999999999
-        sub_date_0 = sub_date_nums[0]
-        sub_date_0_str = self.getDateString(sub_date_0)
-        if sub_date_0_str == '2022-12-29 04:55:00':
-            print(sub_date_0_str)
-        else:
-            pass
-        for c_index in range(0, len(sub_date_nums)):
-            ohlc_info = {
-                'o': sub_open_nums[c_index],
-                'h': sub_high_nums[c_index],
-                'l': sub_low_nums[c_index],
-                'c': sub_close_nums[c_index]
-            }
-            ohlc_infos.append(ohlc_info)
-            l_price = ohlc_info['l']
-            h_price = ohlc_info['h']
-            if l_price < min_price:
-                min_price = l_price
-            else:
-                pass
-            if h_price > max_price:
-                max_price = h_price
-            else:
-                pass
-
-        # 找到第一根突破的K线
-        latest_break_index = -1
-        for c_index in range(0, len(ohlc_infos)):
-            ohlc_info_0 = ohlc_infos[c_index]
-            h_price_0 = ohlc_info_0['h']
-            l_price_0 = ohlc_info_0['l']
-            o_price_0 = ohlc_info_0['o']
-            c_price_0 = ohlc_info_0['c']
-            if break_down:
-                if h_price_0 > break_price and l_price_0 < break_price and c_price_0 < o_price_0: # 第一根向下突破的阴线
-                    latest_break_index = c_index
-                    break
+        fvg_infos = []
+        for index_2 in range(2, len(date_nums)):
+            index_0 = index_2 - 2
+            index_1 = index_2 - 1
+            high_0 = high_nums[index_0]
+            high_1 = high_nums[index_1]
+            high_2 = high_nums[index_2]
+            low_0 = low_nums[index_0]
+            low_1 = low_nums[index_1]
+            low_2 = low_nums[index_2]
+            open_1 = open_nums[index_1]
+            close_1 = close_nums[index_1]
+            if high_2 < low_0: # 出现FVG
+                # 过滤掉比较小的FVG
+                fvg_dis = abs(high_2 - low_0)
+                body_dis = abs(open_1 - close_1)
+                if fvg_dis/body_dis < 0.3:
+                    continue
                 else:
                     pass
-            else:
-                if h_price_0 > break_price and l_price_0 < break_price and c_price_0 > o_price_0:  # 第一根向上突破的阳线
-                    latest_break_index = c_index
-                    break
-                else:
-                    pass
-        if latest_break_index == -1:
-            latest_break_index = len(ohlc_infos) - 2
-        else:
-            pass
-        # 找到最后一跟反向K线
-        latest_reverse_index = 0
-        for c_index in range(0, len(ohlc_infos)):
-            ohlc_info_0 = ohlc_infos[c_index]
-            o_price_0 = ohlc_info_0['o']
-            c_price_0 = ohlc_info_0['c']
-
-            if break_down:
-                # 向下突破
-                if c_price_0 > o_price_0: # 阳线
-                    latest_reverse_index = c_index
-                else:
-                    pass
-            else:
-                # 向上突破
-                if c_price_0 < o_price_0:  # 阴线
-                    latest_reverse_index = c_index
-                else:
-                    pass
-            if c_index >= latest_break_index:
-                break
-            else:
-                pass
-
-        # 合并连续的反向K线
-        first_reverse_index = latest_reverse_index
-        while first_reverse_index > 0:
-            first_reverse_index = first_reverse_index - 1
-            ohlc_info_0 = ohlc_infos[first_reverse_index]
-            o_price_0 = ohlc_info_0['o']
-            c_price_0 = ohlc_info_0['c']
-
-            if break_down:
-                # 向下突破
-                if c_price_0 > o_price_0:  # 阳线
-                    pass
-                else:
-                    first_reverse_index = first_reverse_index + 1
-                    break
-            else:
-                # 向上突破
-                if c_price_0 < o_price_0:  # 阴线
-                    pass
-                else:
-                    first_reverse_index = first_reverse_index + 1
-                    break
-
-        ohlc_info_0 = ohlc_infos[first_reverse_index]
-        h_price_0 = ohlc_info_0['h']
-        l_price_0 = ohlc_info_0['l']
-
-        sub_date_0 = sub_date_nums[first_reverse_index]
-        ohlc_info_1 = ohlc_infos[latest_reverse_index]
-        h_price_1 = ohlc_info_1['h']
-        l_price_1 = ohlc_info_1['l']
-
-        if break_down:
-            ob_info = {
-                'index': first_reverse_index,
-                'high': max(h_price_0, h_price_1),
-                'low': min(l_price_0, l_price_1),
-                'start_ts': sub_date_0,
-                'min_end_ts': sub_date_nums[-1],
-                'end_ts': None,
-                'vaild': True,
-                'type': 'supply'
-            }
-        else:
-            ob_info = {
-                'index': first_reverse_index,
-                'high': max(h_price_0, h_price_1),
-                'low': min(l_price_0, l_price_1),
-                'start_ts': sub_date_0,
-                'min_end_ts': sub_date_nums[-1],
-                'end_ts': None,
-                'vaild': True,
-                'type': 'demand'
-            }
-
-        return ob_info
-
-    def find_fair_value_gap_and_order_block_infos(self, zigzag_point_list: list, data_frame: pd.DataFrame, data_count: int):
-        pre_price_1 = 0.0
-        pre_price_2 = 0.0
-        pre_price_3 = 0.0
-        pre_price_1_time = 0
-        pre_price_2_time = 0
-        pre_price_3_time = 0
-        pre_price_1_index = 0
-        pre_price_2_index = 0
-        pre_price_3_index = 0
-        final_fvg_list = []
-        order_block_infos = []
-        for p_index in range(0, len(zigzag_point_list)):
-            (date_ts, price_value) = zigzag_point_list[p_index]
-            if math.isnan(price_value) == False:
-                if pre_price_1 == 0.0:
-                    pre_price_1 = price_value
-                    pre_price_1_index = p_index
-                    pre_price_1_time = date_ts
-                elif pre_price_2 == 0.0:
-                    pre_price_2 = price_value
-                    pre_price_2_index = p_index
-                    pre_price_2_time = date_ts
-                elif pre_price_3 == 0.0:
-                    pre_price_3 = price_value
-                    pre_price_3_index = p_index
-                    pre_price_3_time = date_ts
-                else:
-                    pass
-                if p_index == len(zigzag_point_list)-3:
-                    print(pre_price_2_time, pre_price_3_time)
-                else:
-                    pass
-
-                if pre_price_1 != 0.0 and pre_price_2 != 0.0 and pre_price_3 != 0.0:
-                    ob_info = None
-                    fvg_list = []
-                    if (pre_price_1 < pre_price_2 and pre_price_1 > pre_price_3):
-                        # 向下突破
-                        fvg_list = self.caculation_fvg_infos(data_frame.loc[pre_price_2_time:pre_price_3_time], break_down=True)
-                        ob_info = self.caculation_order_block_infos(data_frame, pre_price_2_time, pre_price_3_time,
-                                                               pre_price_1, True)
-                    elif (pre_price_1 > pre_price_2 and pre_price_1 < pre_price_3):
-                        # 向上突破
-                        fvg_list = self.caculation_fvg_infos(data_frame.loc[pre_price_2_time:pre_price_3_time], break_down=False)
-                        ob_info = self.caculation_order_block_infos(data_frame, pre_price_2_time, pre_price_3_time,
-                                                               pre_price_1, False)
-                    else:
-                        pass
-                    pre_price_1 = pre_price_2
-                    pre_price_2 = pre_price_3
-                    pre_price_3 = price_value
-                    pre_price_1_time = pre_price_2_time
-                    pre_price_2_time = pre_price_3_time
-                    pre_price_3_time = date_ts
-                    pre_price_1_index = pre_price_2_index
-                    pre_price_2_index = pre_price_3_index
-                    pre_price_3_index = p_index
-                    if p_index == len(zigzag_point_list) - 1:
-                        if (pre_price_1 < pre_price_2 and pre_price_1 > pre_price_3):
-                            # 向下突破
-                            fvg_list = self.caculation_fvg_infos(data_frame.loc[pre_price_2_time:pre_price_3_time], break_down=True)
-                            ob_info = self.caculation_order_block_infos(data_frame, pre_price_2_time, pre_price_3_time,
-                                                                   pre_price_1, True)
-                        elif (pre_price_1 > pre_price_2 and pre_price_1 < pre_price_3):
-                            # 向上突破
-                            fvg_list = self.caculation_fvg_infos(data_frame.loc[pre_price_2_time:pre_price_3_time], break_down=False)
-                            ob_info = self.caculation_order_block_infos(data_frame, pre_price_2_time, pre_price_3_time,
-                                                                   pre_price_1, False)
-                        else:
+                
+                fvg_info = {
+                    'index': index_0,
+                    'start_ts': date_nums[index_0],
+                    'end_ts': date_nums[-1],
+                    'high': low_0,
+                    'low': high_2,
+                    'type': 'supply',
+                    'vaild': True
+                }
+                for next_index in range(index_2, len(date_nums)):
+                    next_high = high_nums[next_index]
+                    next_date = date_nums[next_index]
+                    if next_high > high_2:
+                        if next_high < low_0:
+                            # fvg_info['low'] = next_high
                             pass
+                        else:
+                            fvg_info['end_ts'] = next_date
+                            fvg_info['vaild'] = False
+                            break
                     else:
                         pass
-                    if len(fvg_list) > 0:
-                        final_fvg_list.extend(fvg_list)
+                fvg_infos.append(fvg_info)
+            elif low_2 > high_0: # 出现FVG
+                # 过滤掉比较小的FVG
+                fvg_dis = abs(low_2 - high_0)
+                body_dis = abs(open_1 - close_1)
+                if fvg_dis/body_dis < 0.3:
+                    continue
+                else:
+                    pass
+
+                fvg_info = {
+                    'index': index_0,
+                    'start_ts': date_nums[index_0],
+                    'end_ts': date_nums[-1],
+                    'high': low_2,
+                    'low': high_0,
+                    'type': 'demand',
+                    'vaild': True
+                }
+                for next_index in range(index_2, len(date_nums)):
+                    next_low = low_nums[next_index]
+                    next_date = date_nums[next_index]
+                    if next_low < low_2:
+                        if next_low > high_0:
+                            # fvg_info['high'] = next_low
+                            pass
+                        else:
+                            fvg_info['end_ts'] = next_date
+                            fvg_info['vaild'] = False
+                            break
+                    else:
+                        pass 
+                fvg_infos.append(fvg_info)
+            else:
+                pass
+
+        return fvg_infos
+    
+    def find_order_block_infos(self, data_frame: pd.DataFrame, zigzag_point_list: list):
+        date_nums = data_frame['Date'].tolist()
+        high_nums = data_frame['High'].tolist()
+        low_nums = data_frame['Low'].tolist()
+        min_price = 9999999999
+        max_price = -9999999999
+
+        order_block_infos = []
+        for p_index in range(2, len(zigzag_point_list)):
+            (date_value_0, p_value_0) = zigzag_point_list[p_index-2]
+            (date_value_1, p_value_1) = zigzag_point_list[p_index-1]
+            (date_value_2, p_value_2) = zigzag_point_list[p_index]
+
+            condition_0 = (data_frame['Date'] >= date_value_0) & (data_frame['Date'] <= date_value_1 )
+            sub_open_nums_0 = data_frame[condition_0]['Open'].tolist()
+            sub_close_nums_0 = data_frame[condition_0]['Close'].tolist()
+            sub_high_nums_0 = data_frame[condition_0]['High'].tolist()
+            sub_low_nums_0 = data_frame[condition_0]['Low'].tolist()
+            sub_date_nums_0 = data_frame[condition_0]['Date'].tolist()
+
+            condition_1 = (data_frame['Date'] >= date_value_1) & (data_frame['Date'] <= date_value_2)
+            sub_open_nums = data_frame[condition_1]['Open'].tolist()
+            sub_close_nums = data_frame[condition_1]['Close'].tolist()
+            sub_high_nums = data_frame[condition_1]['High'].tolist()
+            sub_low_nums = data_frame[condition_1]['Low'].tolist()
+            sub_date_nums = data_frame[condition_1]['Date'].tolist()
+            # 过滤掉假突破,或者小幅度突破
+            dis_1 = p_value_1 - p_value_0
+            dis_2 = p_value_2 - p_value_1
+            if abs(dis_2)/abs(dis_1) < 1.3:
+                # 不算大幅度突破,不算订单块
+                continue
+            else:
+                # 算大幅度突破,算订单块
+                pass
+
+            if p_value_1 > p_value_0 and p_value_1 > p_value_2 and p_value_2 < p_value_0: # 向下突破
+                # 找到突破的那根K线
+                ob_info = None
+                for s_index in range(0, len(sub_high_nums)):
+                    s_high = sub_high_nums[s_index]
+                    s_low = sub_low_nums[s_index]
+                    s_open = sub_open_nums[s_index]
+                    s_close = sub_close_nums[s_index]
+                    s_date = sub_date_nums[s_index]
+                    if s_low < p_value_0 and s_high > p_value_0: # 在这里出现了突破
+                        ob_info = {
+                            'index': None,
+                            'high': None,
+                            'low': None,
+                            'start_ts': None,
+                            'end_ts': date_nums[-1],
+                            'vaild': True,
+                            'type': 'supply'
+                        }
+                        if s_index == 0:
+                            # 第一根线就出现了突破,订单块在前一个区间
+                            p_s_index = len(sub_high_nums_0) - 1
+                            while p_s_index > 0:
+                                p_s_high = sub_high_nums_0[p_s_index]
+                                p_s_low = sub_low_nums_0[p_s_index]
+                                p_s_open = sub_open_nums_0[p_s_index]
+                                p_s_close = sub_close_nums_0[p_s_index]
+                                p_s_date = sub_date_nums_0[p_s_index]
+                                p_s_index = p_s_index- 1
+                                if p_s_close > p_s_open: # 是阳线
+                                    ob_info['start_ts'] = p_s_date
+                                    ob_info['end_ts'] = date_nums[-1]
+                                    if ob_info['high'] is None:
+                                        ob_info['high'] = p_s_high
+                                    else:
+                                        ob_info['high'] = max(ob_info['high'], p_s_high)
+                                    if ob_info['low'] is None:
+                                        ob_info['low'] = p_s_low
+                                    else:
+                                        ob_info['low'] = min(ob_info['low'], p_s_low)
+                                else: # 不是阳线
+                                    if ob_info['start_ts'] is None:# 并且还没找到阳线,继续往前找
+                                        continue
+                                    else:# 并且找到了阳线,停止寻找
+                                        break
+                        else:
+                            p_s_index = s_index
+                            while p_s_index > 0:
+                                p_s_high = sub_high_nums[p_s_index]
+                                p_s_low = sub_low_nums[p_s_index]
+                                p_s_open = sub_open_nums[p_s_index]
+                                p_s_close = sub_close_nums[p_s_index]
+                                p_s_date = sub_date_nums[p_s_index]
+                                p_s_index = p_s_index- 1
+                                if p_s_close > p_s_open: # 是阳线
+                                    ob_info['start_ts'] = p_s_date
+                                    ob_info['end_ts'] = date_nums[-1]
+                                    if ob_info['high'] is None:
+                                        ob_info['high'] = p_s_high
+                                    else:
+                                        ob_info['high'] = max(ob_info['high'], p_s_high)
+                                    if ob_info['low'] is None:
+                                        ob_info['low'] = p_s_low
+                                    else:
+                                        ob_info['low'] = min(ob_info['low'], p_s_low)
+                                else: # 是阴线
+                                    if ob_info['start_ts'] is None:# 并且还没找到阳线,继续往前找
+                                        continue
+                                    else:# 并且找到了阳线,停止寻找
+                                        break
+                        break
                     else:
                         pass
-                    if ob_info is not None:
+                if ob_info is not None:
+                    if ob_info['start_ts'] is not None:
+                        # 计算OB的有效性
+                        ob_vaild_ts = date_value_2
+                        next_open_nums = data_frame[data_frame['Date'] >= ob_vaild_ts]['Open'].tolist()
+                        next_close_nums = data_frame[data_frame['Date'] >= ob_vaild_ts]['Close'].tolist()
+                        next_high_nums = data_frame[data_frame['Date'] >= ob_vaild_ts]['High'].tolist()
+                        next_low_nums = data_frame[data_frame['Date'] >= ob_vaild_ts]['Low'].tolist()
+                        next_date_nums = data_frame[data_frame['Date'] >= ob_vaild_ts]['Date'].tolist()
+                        for next_index in range(0, len(next_date_nums)):
+                            next_high = next_high_nums[next_index]
+                            next_low = next_low_nums[next_index]
+                            next_date = next_date_nums[next_index]
+
+                            ob_high = ob_info['high']
+                            ob_low = ob_info['low']
+                            if next_high > ob_low:
+                                if next_high < ob_high:
+                                    # ob_info['low'] = next_high
+                                    pass
+                                else:
+                                    ob_info['end_ts'] = next_date
+                                    ob_info['vaild'] = False
+                                    break
+                            else:
+                                pass
+                        order_block_infos.append(ob_info)
+                    else:
+                        pass
+                else:
+                    pass
+            elif p_value_1 < p_value_0 and p_value_1 < p_value_2 and p_value_2 > p_value_0: # 向上突破
+                # 找到突破的那根K线
+                ob_info = None
+                for s_index in range(0, len(sub_high_nums)):
+                    s_high = sub_high_nums[s_index]
+                    s_low = sub_low_nums[s_index]
+                    s_open = sub_open_nums[s_index]
+                    s_close = sub_close_nums[s_index]
+                    s_date = sub_date_nums[s_index]
+                    if s_low < p_value_0 and s_high > p_value_0: # 在这里出现了突破
+                        ob_info = {
+                            'index': None,
+                            'high': None,
+                            'low': None,
+                            'start_ts': None,
+                            'end_ts': date_nums[-1],
+                            'vaild': True,
+                            'type': 'demand'
+                        }
+                        if s_index == 0:
+                            # 第一根线就出现了突破,订单块在前一个区间
+                            p_s_index = len(sub_high_nums_0) - 1
+                            while p_s_index > 0:
+                                p_s_high = sub_high_nums_0[p_s_index]
+                                p_s_low = sub_low_nums_0[p_s_index]
+                                p_s_open = sub_open_nums_0[p_s_index]
+                                p_s_close = sub_close_nums_0[p_s_index]
+                                p_s_date = sub_date_nums_0[p_s_index]
+                                p_s_index = p_s_index- 1
+                                if p_s_close < p_s_open: # 是阴线
+                                    ob_info['start_ts'] = p_s_date
+                                    if ob_info['high'] is None:
+                                        ob_info['high'] = p_s_high
+                                    else:
+                                        ob_info['high'] = max(ob_info['high'], p_s_high)
+                                    if ob_info['low'] is None:
+                                        ob_info['low'] = p_s_low
+                                    else:
+                                        ob_info['low'] = min(ob_info['low'], p_s_low)
+                                else: # 不是阴线
+                                    if ob_info['start_ts'] is None:# 并且还没找到阴线,继续往前找
+                                        continue
+                                    else:# 并且找到了阴线,停止寻找
+                                        break
+                        else:
+                            p_s_index = s_index
+                            while p_s_index > 0:
+                                p_s_high = sub_high_nums[p_s_index]
+                                p_s_low = sub_low_nums[p_s_index]
+                                p_s_open = sub_open_nums[p_s_index]
+                                p_s_close = sub_close_nums[p_s_index]
+                                p_s_date = sub_date_nums[p_s_index]
+                                p_s_index = p_s_index- 1
+                                if p_s_close < p_s_open: # 是阴线
+                                    ob_info['start_ts'] = p_s_date
+                                    if ob_info['high'] is None:
+                                        ob_info['high'] = p_s_high
+                                    else:
+                                        ob_info['high'] = max(ob_info['high'], p_s_high)
+                                    if ob_info['low'] is None:
+                                        ob_info['low'] = p_s_low
+                                    else:
+                                        ob_info['low'] = min(ob_info['low'], p_s_low)
+                                else: # 是阳线
+                                    if ob_info['start_ts'] is None:# 并且还没找到阴线,继续往前找
+                                        continue
+                                    else:# 并且找到了阴线,停止寻找
+                                        break
+                        break
+                    else:
+                        pass
+
+                if ob_info is not None:
+                    if ob_info['start_ts'] is not None:
+                        # 计算OB的有效性
+                        ob_vaild_ts = date_value_2
+                        next_open_nums = data_frame[data_frame['Date'] >= ob_vaild_ts]['Open'].tolist()
+                        next_close_nums = data_frame[data_frame['Date'] >= ob_vaild_ts]['Close'].tolist()
+                        next_high_nums = data_frame[data_frame['Date'] >= ob_vaild_ts]['High'].tolist()
+                        next_low_nums = data_frame[data_frame['Date'] >= ob_vaild_ts]['Low'].tolist()
+                        next_date_nums = data_frame[data_frame['Date'] >= ob_vaild_ts]['Date'].tolist()
+                        for next_index in range(0, len(next_date_nums)):
+                            next_high = next_high_nums[next_index]
+                            next_low = next_low_nums[next_index]
+                            next_date = next_date_nums[next_index]
+
+                            ob_high = ob_info['high']
+                            ob_low = ob_info['low']
+                            if next_low < ob_high:
+                                if next_low > ob_low:
+                                    # ob_info['high'] = next_low
+                                    pass
+                                else:
+                                    ob_info['end_ts'] = next_date
+                                    ob_info['vaild'] = False
+                                    break
+                            else:
+                                pass
                         order_block_infos.append(ob_info)
                     else:
                         pass
@@ -544,147 +620,14 @@ class SignalMonitor:
             else:
                 pass
 
-        date_nums = data_frame['Date']
-        open_nums = data_frame['Open']
-        high_nums = data_frame['High']
-        low_nums = data_frame['Low']
-        close_nums = data_frame['Close']
+        return order_block_infos
+        
+    
+    def find_fair_value_gap_and_order_block_infos(self, data_frame: pd.DataFrame, zigzag_point_list: list):
+        fvg_infos = self.find_fair_value_gap_infos(data_frame=data_frame)
+        ob_infos = self.find_order_block_infos(data_frame=data_frame, zigzag_point_list=zigzag_point_list)
 
-        fill_between_list = []
-        # 计算fvg的有效性
-        for f_index in range(0, len(final_fvg_list)):
-            fvg_info = final_fvg_list[f_index]
-            start_ts = fvg_info['start_ts']
-            high = fvg_info['high']
-            low = fvg_info['low']
-            type = fvg_info['type']
-
-            start_index = -1
-            end_index = -1
-            end_ts = None
-            where_values_1 = (data_frame['Date'] >= start_ts).values
-            for w_index in range(0, len(date_nums) - 3):
-                here = where_values_1[w_index]
-                if here and start_index == -1:
-                    start_index = w_index
-                else:
-                    pass
-                if start_index != -1:
-                    c_high = high_nums[w_index]
-                    c_low = low_nums[w_index]
-                    if type == 'supply':
-                        if c_high > low and c_low < low and w_index > (start_index + 2):
-                            # 进入供应区
-                            end_index = w_index
-                            end_ts = date_nums[end_index]
-                            break
-                        else:
-                            pass
-                    else:
-                        if c_high > high and c_low < high and w_index > (start_index + 2):
-                            # 进入需求区
-                            end_index = w_index
-                            end_ts = date_nums[end_index]
-                            break
-                        else:
-                            pass
-
-                else:
-                    pass
-            if type == 'supply':
-                color = 'y'
-            else:
-                color = 'y'
-            if end_ts is None:
-                end_ts = date_nums[-1]
-                where_values_2 = where_values_1
-            else:
-                where_values_2 = (data_frame['Date'] <= end_ts).values
-            fvg_info['end_ts'] = end_ts
-            where_values = []
-            for w_index in range(0, len(where_values_2)):
-                where_1 = where_values_1[w_index]
-                where_2 = where_values_2[w_index]
-                if where_1 and where_2:
-                    where_values.append(True)
-                else:
-                    where_values.append(False)
-            where_values = where_values[data_count:]
-            fvg_info['valid'] = where_values[-1]
-            fill_between = dict(y1=low, y2=high,
-                                where=where_values, alpha=0.15,
-                                color=color)
-            fill_between_list.append(fill_between)
-
-        # 计算order_block的有效性
-        for o_index in range(0, len(order_block_infos)):
-            ob_info = order_block_infos[o_index]
-            start_ts = ob_info['start_ts']
-            high = ob_info['high']
-            low = ob_info['low']
-            type = ob_info['type']
-            min_end_ts = ob_info['min_end_ts']
-
-            start_index = -1
-            end_index = -1
-            end_ts = None
-            where_values_1 = (data_frame['Date'] >= start_ts).values
-            for w_index in range(0, len(date_nums) - 3):
-                cur_ts = date_nums[w_index]
-                here = where_values_1[w_index]
-                if here and start_index == -1:
-                    start_index = w_index
-                else:
-                    pass
-                if start_index != -1 and cur_ts > min_end_ts:
-                    c_high = high_nums[w_index]
-                    c_low = low_nums[w_index]
-                    if type == 'supply':
-                        if c_high > low and c_low < low and w_index > (start_index + 2):
-                            # 进入供应区
-                            end_index = w_index
-                            end_ts = date_nums[end_index]
-                            break
-                        else:
-                            pass
-                    else:
-                        if c_high > high and c_low < high and w_index > (start_index + 2):
-                            # 进入需求区
-                            end_index = w_index
-                            end_ts = date_nums[end_index]
-                            break
-                        else:
-                            pass
-
-                else:
-                    pass
-
-            if type == 'supply':
-                color = 'r'
-            else:
-                color = 'g'
-            if end_ts is None:
-                end_ts = date_nums[-1]
-                where_values_2 = where_values_1
-            else:
-                where_values_2 = (data_frame['Date'] <= end_ts).values
-            ob_info['end_ts'] = end_ts
-            where_values = []
-            for w_index in range(0, len(where_values_2)):
-                where_1 = where_values_1[w_index]
-                where_2 = where_values_2[w_index]
-                if where_1 and where_2:
-                    where_values.append(True)
-                else:
-                    where_values.append(False)
-            where_values = where_values[data_count:]
-            ob_info['valid'] = where_values[-1]
-            fill_between = dict(y1=low, y2=high,
-                                where=where_values, alpha=0.15,
-                                color=color)
-            fill_between_list.append(fill_between)
-
-        return (fill_between_list, final_fvg_list, order_block_infos)
+        return (fvg_infos, ob_infos)
 
     def getUTCDateStrFromTimestamp(self, timestamp: int):
         utc_time = datetime.utcfromtimestamp(timestamp)
@@ -837,7 +780,7 @@ class SignalMonitor:
                 points = sp_info['points']
                 options = sp_info['options']
                 overrides = options['overrides']
-                linecolor = overrides['linecolor']
+                lineColor = overrides['lineColor']
                 x_list = []
                 y_list = []
                 for p_info in points:
@@ -863,8 +806,7 @@ class SignalMonitor:
 
     def check_signal(self, symbol: str, interval: str, klines: list):
         data_frame = self.get_data_frame(kline_list=klines)
-        date_nums = data_frame['Date']
-        if len(date_nums) < 170:
+        if len(data_frame['Date']) < 100:
             return {
                 'appear': False,
                 'type': 'buy',
@@ -876,108 +818,86 @@ class SignalMonitor:
             }
         else:
             pass
-
-        data_count = -(len(date_nums) - 5)
         deep = self.signal_params['deep']['value']
         deep = int(deep)
         # 计算波段高低点
-        (high_point_list, low_point_list) = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
-        high_point_list = high_point_list[data_count:]
-        low_point_list = low_point_list[data_count:]
-        real_date_nums = date_nums[data_count:]
-        zigzag_point_list1 = self.zigzag_line_point_list(high_point_list=high_point_list, low_point_list=low_point_list,
-                                                        date_nums=real_date_nums)
-
-        (fill_between_list, final_fvg_list, order_block_infos) = self.find_fair_value_gap_and_order_block_infos(zigzag_point_list=zigzag_point_list1,
-                                                                   data_frame=data_frame, data_count=data_count)
-
-        open_nums = data_frame['Open']
-        close_nums = data_frame['Close']
-        high_nums = data_frame['High']
-        low_nums = data_frame['Low']
+        hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
+        zigzag_point_list = self.zigzag_line_point_list(hl_point_list=hl_point_list, data_frame=data_frame)
+        (fvg_infos, ob_infos) = self.find_fair_value_gap_and_order_block_infos(data_frame=data_frame, zigzag_point_list=zigzag_point_list)
+        open_nums = data_frame['Open'].tolist()
+        close_nums = data_frame['Close'].tolist()
+        high_nums = data_frame['High'].tolist()
+        low_nums = data_frame['Low'].tolist()
 
         latest_open = open_nums[-2]
         latest_close = close_nums[-2]
         latest_high = high_nums[-2]
         latest_low = low_nums[-2]
-        final_fvg_list.pop()# 删除最后一个fvg防止频繁无效提醒
-        for fvg_info in final_fvg_list:
-            valid = fvg_info['valid']
+
+        def is_overlap(a1, a2, b1, b2):
+            return (a1 <= b2) and (a2 >= b1)
+        
+        for fvg_info in fvg_infos:
+            vaild = fvg_info['vaild']
             high = fvg_info['high']
             low = fvg_info['low']
             type = fvg_info['type']
-            if valid:
-                # if type == 'supply':
-                #     print(
-                #         f'check_signal_for_fvg_info-->{symbol} {interval} {latest_high}-{low}-{latest_low} {high} {type}')
-                # else:
-                #     print(
-                #         f'check_signal_for_fvg_info-->{symbol} {interval} {latest_high}-{high}-{latest_low} {low} {type}')
-                pass
-            else:
-                pass
-            if type == 'supply' and latest_high > low and latest_low < low and valid:
-                return {
-                    'appear': True,
-                    'type': 'sell',
-                    'enter_price': 0.0,
-                    'profit_price': 0.0,
-                    'stop_price': 0.0,
-                    'win_percentage': 0.0,
-                    'detail_msg': f'ict_smc_signal 价格进入{interval}供应区FVG'
-                }
-            elif type == 'demand' and latest_high > high and latest_low < high and valid:
-                return {
-                    'appear': True,
-                    'type': 'buy',
-                    'enter_price': 0.0,
-                    'profit_price': 0.0,
-                    'stop_price': 0.0,
-                    'win_percentage': 0.0,
-                    'detail_msg': f'ict_smc_signal 价格进入{interval}需求区FVG'
-                }
+            if vaild and is_overlap(latest_high, latest_low, high, low):
+                if type == 'supply':
+                    return {
+                        'appear': True,
+                        'type': 'sell',
+                        'enter_price': 0.0,
+                        'profit_price': 0.0,
+                        'stop_price': 0.0,
+                        'win_percentage': 0.0,
+                        'detail_msg': f'ict_smc_signal 价格进入{interval}供应区FVG'
+                    }
+                elif type == 'demand':
+                    return {
+                        'appear': True,
+                        'type': 'buy',
+                        'enter_price': 0.0,
+                        'profit_price': 0.0,
+                        'stop_price': 0.0,
+                        'win_percentage': 0.0,
+                        'detail_msg': f'ict_smc_signal 价格进入{interval}需求区FVG'
+                    }
+                else:
+                    pass
             else:
                 pass
 
-        order_block_infos.pop() # 删除最后一个订单块,防止频繁提示
-        for ob_info in order_block_infos:
-            valid = ob_info['valid']
+        for ob_info in ob_infos:
+            vaild = ob_info['vaild']
             high = ob_info['high']
             low = ob_info['low']
             type = ob_info['type']
-            if valid:
-                # if type == 'supply':
-                #     print(
-                #         f'check_signal_for_fvg_info-->{symbol} {interval} {latest_high}-{low}-{latest_low} {high} {type}')
-                # else:
-                #     print(
-                #         f'check_signal_for_fvg_info-->{symbol} {interval} {latest_high}-{high}-{latest_low} {low} {type}')
-                pass
+            if vaild and is_overlap(latest_high, latest_low, high, low):
+                if type == 'supply':
+                    return {
+                        'appear': True,
+                        'type': 'sell',
+                        'enter_price': 0.0,
+                        'profit_price': 0.0,
+                        'stop_price': 0.0,
+                        'win_percentage': 0.0,
+                        'detail_msg': f'ict_smc_signal 价格进入{interval}供应区order_block'
+                    }
+                elif type == 'demand':
+                    return {
+                        'appear': True,
+                        'type': 'buy',
+                        'enter_price': 0.0,
+                        'profit_price': 0.0,
+                        'stop_price': 0.0,
+                        'win_percentage': 0.0,
+                        'detail_msg': f'ict_smc_signal 价格进入{interval}需求区order_block'
+                    }
+                else:
+                    pass
             else:
                 pass
-            if type == 'supply' and latest_high > low and latest_low < low and valid:
-                return {
-                    'appear': True,
-                    'type': 'sell',
-                    'enter_price': 0.0,
-                    'profit_price': 0.0,
-                    'stop_price': 0.0,
-                    'win_percentage': 0.0,
-                    'detail_msg': f'ict_smc_signal 价格进入{interval}供应区order_block'
-                }
-            elif type == 'demand' and latest_high > high and latest_low < high and valid:
-                return {
-                    'appear': True,
-                    'type': 'buy',
-                    'enter_price': 0.0,
-                    'profit_price': 0.0,
-                    'stop_price': 0.0,
-                    'win_percentage': 0.0,
-                    'detail_msg': f'ict_smc_signal 价格进入{interval}需求区order_block'
-                }
-            else:
-                pass
-
 
         return {
             'appear': False,
@@ -991,30 +911,19 @@ class SignalMonitor:
 
     def shapes_on_chart(self, symbol: str, interval: str, klines: list, for_tv: bool = False):
         data_frame = self.get_data_frame(kline_list=klines)
-        date_nums = data_frame['Date']
-        data_count = 5 - len(date_nums)
         deep = self.signal_params['deep']['value']
         deep = int(deep)
         # 计算波段高低点
-        (high_point_list, low_point_list) = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
-        high_point_list = high_point_list[data_count:]
-        low_point_list = low_point_list[data_count:]
-        real_date_nums = date_nums[data_count:]
-        zigzag_point_list1 = self.zigzag_line_point_list(high_point_list=high_point_list,
-                                                         low_point_list=low_point_list,
-                                                         date_nums=real_date_nums)
-        # print('zigzag_point_list-->', zigzag_point_list1)
-        # 计算公允价值缺口
-        (fill_betweens, fvg_info_list, order_block_infos) = self.find_fair_value_gap_and_order_block_infos(
-            zigzag_point_list=zigzag_point_list1, data_frame=data_frame,
-            data_count=data_count)
+        hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
+        zigzag_point_list = self.zigzag_line_point_list(hl_point_list=hl_point_list, data_frame=data_frame)
+        (fvg_infos, ob_infos) = self.find_fair_value_gap_and_order_block_infos(data_frame=data_frame, zigzag_point_list=zigzag_point_list)
 
         yellow_color = '#FFB90F'
         red_color = '#FF3030'
         green_color = '#00FA9A'
         rectangle_info_list = []
-        for f_index in range(0, len(fvg_info_list)):
-            fvg_info = fvg_info_list[f_index]
+        for f_index in range(0, len(fvg_infos)):
+            fvg_info = fvg_infos[f_index]
             start_ts: pd.Timestamp = fvg_info['start_ts']
             end_ts: pd.Timestamp = fvg_info['end_ts']
             high = fvg_info['high']
@@ -1081,10 +990,15 @@ class SignalMonitor:
                 }
                 rectangle_info_list.append(rectangle_info)
 
-        for f_index in range(0, len(order_block_infos)):
-            ob_info = order_block_infos[f_index]
+        for f_index in range(0, len(ob_infos)):
+            ob_info = ob_infos[f_index]
             start_ts: pd.Timestamp = ob_info['start_ts']
             end_ts: pd.Timestamp = ob_info['end_ts']
+            if start_ts is None or end_ts is None:
+                logger.debug(f'{start_ts}--{end_ts}')
+                continue
+            else:
+                pass
             high = ob_info['high']
             high = float(high)
             low = ob_info['low']
@@ -1149,20 +1063,20 @@ class SignalMonitor:
                 }
                 rectangle_info_list.append(rectangle_info)
 
-        zigzag_point_list = []
-        for p_index in range(0, len(zigzag_point_list1)):
-            (p_ts, p_price) = zigzag_point_list1[p_index]
+        zigzag_point_list_2 = []
+        for p_index in range(0, len(zigzag_point_list)):
+            (p_ts, p_price) = zigzag_point_list[p_index]
             p_price = float(p_price)
             if for_tv:
                 p_ts = int(pd.to_datetime(p_ts).value / 10 ** 9)
             else:
                 pass
-            zigzag_point_list.append({'time': p_ts, 'price': p_price})
-        zigzag_point_list.append(zigzag_point_list[-1])
+            zigzag_point_list_2.append({'time': p_ts, 'price': p_price})
+        zigzag_point_list_2.append(zigzag_point_list_2[-1])
         zigzag_line_info = {
             'shape_name': 'zigzag_line',
             'shape_type': 'multi_point_shape',
-            'points': zigzag_point_list,
+            'points': zigzag_point_list_2,
             'options': {
                 'shape': 'path',
                 'lock': True,
@@ -1170,7 +1084,7 @@ class SignalMonitor:
                 'disableSave': True,
                 'disableUndo': True,
                 'overrides': {
-                    'lineColor': '#0000FF',
+                    'lineColor': '#FFFFFF',
                     'lineWidth': 1,
                     'lineStyle': 0,
                     'transparency': 80
@@ -1182,6 +1096,5 @@ class SignalMonitor:
 
         return shape_infos
 
-    def shapes_on_tv_chart(self, symbol: str, interval: str, klines: list):
+    def tv_shape_infos(self, symbol: str, interval: str, klines: list):
         return self.shapes_on_chart(symbol=symbol, interval=interval, klines=klines, for_tv=True)
-
