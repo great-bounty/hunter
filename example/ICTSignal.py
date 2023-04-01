@@ -48,45 +48,35 @@ class SignalMonitor:
     def find_high_low_point_list(self, data_frame: pd.DataFrame, deep: int):
         high_nums = data_frame['High'].tolist()
         low_nums = data_frame['Low'].tolist()
+        latest_high_list = [high_nums[-1]] * deep
+        latest_low_list = [low_nums[-1]] * deep
 
-        high_nums_2 = data_frame['High'].tolist()
-        high_nums_2.reverse()
-        low_nums_2 = data_frame['Low'].tolist()
-        low_nums_2.reverse()
-        # 向前补全
-
-        high_nums_2.extend(high_nums)
-        high_nums = high_nums_2
-        low_nums_2.extend(low_nums)
-        low_nums = low_nums_2
+        high_nums.extend(latest_low_list)
+        low_nums.extend(latest_high_list)
 
         # 定义每组元素个数
         group_size = deep
         # 使用列表推导式和切片将数组分割为二维数组
-        high_point_list = []
-        for i in range(0, len(high_nums), group_size):
-            sub_list = high_nums[i:i+group_size]
+        high_point_list = [np.nan] * len(high_nums)
+        for i in range(deep, len(high_nums)-deep):
+            sub_value = high_nums[i]
+            sub_list = high_nums[i-deep:i+deep]
             max_value = max(sub_list)
-            for sub_index in range(0, len(sub_list)):
-                sub_value = sub_list[sub_index]
-                if sub_value == max_value:
-                    pass
-                else:
-                    sub_list[sub_index] = np.nan
-            high_point_list.extend(sub_list)
+            if sub_value == max_value:
+                high_point_list[i] = max_value
+            else:
+                pass
 
         # 使用列表推导式和切片将数组分割为二维数组
-        low_point_list = []
-        for i in range(0, len(low_nums), group_size):
-            sub_list = low_nums[i:i+group_size]
+        low_point_list = [np.nan] * len(low_nums)
+        for i in range(deep, len(low_nums)-deep):
+            sub_value = low_nums[i]
+            sub_list = low_nums[i-deep:i+deep]
             min_value = min(sub_list)
-            for sub_index in range(0, len(sub_list)):
-                sub_value = sub_list[sub_index]
-                if sub_value == min_value:
-                    pass
-                else:
-                    sub_list[sub_index] = np.nan
-            low_point_list.extend(sub_list)
+            if sub_value == min_value:
+                low_point_list[i] = min_value
+            else:
+                pass
 
         same_point_list = []
         hl_point_list = []
@@ -150,50 +140,50 @@ class SignalMonitor:
         count = 5
         while count > 0:
             count = count - 1
-            # 将间隔不够的高低点过滤掉
-            value_1 = np.nan
-            index_1 = 0
-            value_2 = np.nan
-            index_2 = 0
-            value_3 = np.nan
-            index_3 = 0
-            find_target = False
-            for index in range(0, len(hl_point_list)):
-                cur_value = hl_point_list[index]
-                if math.isnan(cur_value):
-                    pass
-                else:
-                    if math.isnan(value_1):
-                        value_1 = cur_value
-                        index_1 = index
-                    elif math.isnan(value_2):
-                        value_2 = cur_value
-                        index_2 = index
-                    elif math.isnan(value_3):
-                        value_3 = cur_value
-                        index_3 = index
-                    else:
-                        index_1 = index_2
-                        index_2 = index_3
-                        index_3 = index
-                        value_1 = value_2
-                        value_2 = value_3
-                        value_3 = cur_value
-                        if (index_3 - index_2) <= deep:# 间隔不足deep
-                            if value_1 >= value_2 and value_1 >= value_3:
-                                if value_2 <= value_3:
-                                    hl_point_list[index_3] = np.nan
-                                else:
-                                    hl_point_list[index_2] = np.nan
-                            elif value_1 <= value_2 and value_1 <= value_3:
-                                if value_2 < value_3:
-                                    hl_point_list[index_2] = np.nan
-                                else:
-                                    hl_point_list[index_3] = np.nan
-                            else:
-                                pass
-                        else:
-                            pass
+            # # 将间隔不够的高低点过滤掉
+            # value_1 = np.nan
+            # index_1 = 0
+            # value_2 = np.nan
+            # index_2 = 0
+            # value_3 = np.nan
+            # index_3 = 0
+            # find_target = False
+            # for index in range(0, len(hl_point_list)):
+            #     cur_value = hl_point_list[index]
+            #     if math.isnan(cur_value):
+            #         pass
+            #     else:
+            #         if math.isnan(value_1):
+            #             value_1 = cur_value
+            #             index_1 = index
+            #         elif math.isnan(value_2):
+            #             value_2 = cur_value
+            #             index_2 = index
+            #         elif math.isnan(value_3):
+            #             value_3 = cur_value
+            #             index_3 = index
+            #         else:
+            #             index_1 = index_2
+            #             index_2 = index_3
+            #             index_3 = index
+            #             value_1 = value_2
+            #             value_2 = value_3
+            #             value_3 = cur_value
+            #             if (index_3 - index_2) <= deep:# 间隔不足deep
+            #                 if value_1 >= value_2 and value_1 >= value_3:
+            #                     if value_2 <= value_3:
+            #                         hl_point_list[index_3] = np.nan
+            #                     else:
+            #                         hl_point_list[index_2] = np.nan
+            #                 elif value_1 <= value_2 and value_1 <= value_3:
+            #                     if value_2 < value_3:
+            #                         hl_point_list[index_2] = np.nan
+            #                     else:
+            #                         hl_point_list[index_3] = np.nan
+            #                 else:
+            #                     pass
+            #             else:
+            #                 pass
             
             # 将连续的高点或者连续的低点过滤掉
             value_1 = np.nan
@@ -266,9 +256,8 @@ class SignalMonitor:
                                 hl_point_list[index_3] = np.nan
                         else:
                             pass
-        real_count = len(hl_point_list) // 2
-        hl_point_list = hl_point_list[real_count:]
-
+        
+        hl_point_list = hl_point_list[:-deep]
         return hl_point_list
 
     def zigzag_line_point_list(self, hl_point_list: list, data_frame: pd.DataFrame):
@@ -309,7 +298,7 @@ class SignalMonitor:
                 # 过滤掉比较小的FVG
                 fvg_dis = abs(high_2 - low_0)
                 body_dis = abs(open_1 - close_1)
-                if fvg_dis/body_dis < 0.3:
+                if fvg_dis/body_dis < 0.5:
                     continue
                 else:
                     pass
@@ -341,7 +330,7 @@ class SignalMonitor:
                 # 过滤掉比较小的FVG
                 fvg_dis = abs(low_2 - high_0)
                 body_dis = abs(open_1 - close_1)
-                if fvg_dis/body_dis < 0.3:
+                if fvg_dis/body_dis < 0.5:
                     continue
                 else:
                     pass
@@ -403,7 +392,7 @@ class SignalMonitor:
             # 过滤掉假突破,或者小幅度突破
             dis_1 = p_value_1 - p_value_0
             dis_2 = p_value_2 - p_value_1
-            if abs(dis_2)/abs(dis_1) < 1.3:
+            if abs(dis_2)/abs(dis_1) < 1.5:
                 # 不算大幅度突破,不算订单块
                 continue
             else:
