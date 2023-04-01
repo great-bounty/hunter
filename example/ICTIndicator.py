@@ -421,6 +421,10 @@ class TVIndicator:
             # 过滤掉假突破,或者小幅度突破
             dis_1 = p_value_1 - p_value_0
             dis_2 = p_value_2 - p_value_1
+            if dis_1 == 0.0:
+                dis_1 = dis_2
+            else:
+                pass
             if abs(dis_2)/abs(dis_1) < 1.5:
                 # 不算大幅度突破,不算订单块
                 continue
