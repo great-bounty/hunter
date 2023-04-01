@@ -458,7 +458,7 @@ class SignalMonitor:
                                         break
                         else:
                             p_s_index = s_index
-                            while p_s_index > 0:
+                            while p_s_index >= 0:
                                 p_s_high = sub_high_nums[p_s_index]
                                 p_s_low = sub_low_nums[p_s_index]
                                 p_s_open = sub_open_nums[p_s_index]
@@ -561,7 +561,7 @@ class SignalMonitor:
                                         break
                         else:
                             p_s_index = s_index
-                            while p_s_index > 0:
+                            while p_s_index >= 0:
                                 p_s_high = sub_high_nums[p_s_index]
                                 p_s_low = sub_low_nums[p_s_index]
                                 p_s_open = sub_open_nums[p_s_index]
@@ -836,14 +836,21 @@ class SignalMonitor:
         latest_low = low_nums[-2]
 
         def is_overlap(a1, a2, b1, b2):
-            return (a1 <= b2) and (a2 >= b1)
+            overlap = (min(a1, a2) <= max(b2, b1)) and (max(a2, a1) >= min(b1, b2))
+            return overlap
         
-        for fvg_info in fvg_infos:
+        for index in range(0, len(fvg_infos)) :
+            fvg_info = fvg_infos[index]
             vaild = fvg_info['vaild']
             high = fvg_info['high']
             low = fvg_info['low']
             type = fvg_info['type']
-            if vaild and is_overlap(latest_high, latest_low, high, low):
+            overlap = is_overlap(latest_high, latest_low, high, low)
+            # if index > 40:
+            #     print(f'{index}--{overlap}--({latest_high}, {latest_low})和({high}, {low})')
+            # else:
+            #     pass
+            if vaild and overlap:
                 if type == 'supply':
                     return {
                         'appear': True,
