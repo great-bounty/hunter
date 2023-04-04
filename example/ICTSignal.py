@@ -1,3 +1,4 @@
+
 import pandas as pd
 import numpy as np
 import pandas_ta as ta
@@ -6,9 +7,9 @@ import copy
 import logging
 import time
 from datetime import *
-from py_app.utils.logger_tools import logger
 import plotly.graph_objects as pygo
 from plotly import subplots
+from py_app.utils.logger_tools import logger
 
 class SignalMonitor:
     name = 'ICT&SMC-SignalMonitor'
@@ -17,10 +18,38 @@ class SignalMonitor:
     detail_url = 'https://www.bilibili.com/video/BV19k4y1t77h/?share_source=copy_web&vd_source=2bdbf1083d52bf447f49a6e78c8cb443'
     open_source = 'YES'
     signal_params = {
-        "deep": {
+        "long deep": {
+            "type": "number",
+            "value": 20
+        },
+        "short deep": {
             "type": "number",
             "value": 5
-        }
+        },
+        "show FVG": {
+            "type": "bool",
+            "value": True
+        },
+        "show OB": {
+            "type": "bool",
+            "value": True
+        },
+        "show Long HL Line": {
+            "type": "bool",
+            "value": True
+        },
+        "show Short HL Line": {
+            "type": "bool",
+            "value": True
+        },
+        "long HL Line Color": {
+            "type": "color",
+            "value": 'rgba(244, 164, 96, 0.4)'
+        },
+        "short HL Line Color": {
+            "type": "color",
+            "value": 'rgba(192, 192, 192, 0.4)'
+        },
         # ,
         # "string": {
         #     "type": "string",
@@ -29,10 +58,6 @@ class SignalMonitor:
         # "bool": {
         #     "type": "bool",
         #     "value": True
-        # },
-        # "color": {
-        #     "type": "color",
-        #     "value": 'rgba(255, 0, 0, 0.4)'
         # },
         # "enum": {
         #     "type": "enum",
@@ -302,7 +327,7 @@ class SignalMonitor:
                     body_dis = fvg_dis*0.1
                 else:
                     pass
-                if fvg_dis/body_dis < 0.3:
+                if fvg_dis/body_dis < 0.3: # 造成FVG的这根K线的涨跌幅
                     continue
                 else:
                     pass
@@ -819,7 +844,7 @@ class SignalMonitor:
             }
         else:
             pass
-        deep = self.signal_params['deep']['value']
+        deep = self.signal_params['long deep']['value']
         deep = int(deep)
         # 计算波段高低点
         hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
@@ -836,21 +861,15 @@ class SignalMonitor:
         latest_low = low_nums[-2]
 
         def is_overlap(a1, a2, b1, b2):
-            overlap = (min(a1, a2) <= max(b2, b1)) and (max(a2, a1) >= min(b1, b2))
+            overlap = (min(a1, a2) <= max(b1, b2)) and (max(a1, a2) >= min(b1, b2))
             return overlap
         
-        for index in range(0, len(fvg_infos)) :
-            fvg_info = fvg_infos[index]
+        for fvg_info in fvg_infos:
             vaild = fvg_info['vaild']
             high = fvg_info['high']
             low = fvg_info['low']
             type = fvg_info['type']
-            overlap = is_overlap(latest_high, latest_low, high, low)
-            # if index > 40:
-            #     print(f'{index}--{overlap}--({latest_high}, {latest_low})和({high}, {low})')
-            # else:
-            #     pass
-            if vaild and overlap:
+            if vaild and is_overlap(latest_high, latest_low, high, low):
                 if type == 'supply':
                     return {
                         'appear': True,
@@ -919,7 +938,7 @@ class SignalMonitor:
 
     def shapes_on_chart(self, symbol: str, interval: str, klines: list, for_tv: bool = False):
         data_frame = self.get_data_frame(kline_list=klines)
-        deep = self.signal_params['deep']['value']
+        deep = self.signal_params['long deep']['value']
         deep = int(deep)
         # 计算波段高低点
         hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
@@ -1092,8 +1111,8 @@ class SignalMonitor:
                 'disableSave': True,
                 'disableUndo': True,
                 'overrides': {
-                    'lineColor': '#FFFFFF',
-                    'lineWidth': 1,
+                    'lineColor': '#F4A460',
+                    'lineWidth': 2,
                     'lineStyle': 0,
                     'transparency': 80
                 }
@@ -1102,7 +1121,42 @@ class SignalMonitor:
         shape_infos = [zigzag_line_info]
         shape_infos.extend(rectangle_info_list)
 
+        deep = self.signal_params['short deep']['value']
+        # 计算波段高低点
+        hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
+        zigzag_point_list = self.zigzag_line_point_list(hl_point_list=hl_point_list, data_frame=data_frame)
+        zigzag_point_list_2 = []
+        for p_index in range(0, len(zigzag_point_list)):
+            (p_ts, p_price) = zigzag_point_list[p_index]
+            p_price = float(p_price)
+            if for_tv:
+                p_ts = int(pd.to_datetime(p_ts).value / 10 ** 9)
+            else:
+                pass
+            zigzag_point_list_2.append({'time': p_ts, 'price': p_price})
+        zigzag_point_list_2.append(zigzag_point_list_2[-1])
+        zigzag_line_info = {
+            'shape_name': 'zigzag_line',
+            'shape_type': 'multi_point_shape',
+            'points': zigzag_point_list_2,
+            'options': {
+                'shape': 'path',
+                'lock': True,
+                'disableSelection': True,
+                'disableSave': True,
+                'disableUndo': True,
+                'overrides': {
+                    'lineColor': '#C0C0C0',
+                    'lineWidth': 1,
+                    'lineStyle': 0,
+                    'transparency': 50
+                }
+            }
+        }
+        shape_infos.append(zigzag_line_info)
+
         return shape_infos
 
     def tv_shape_infos(self, symbol: str, interval: str, klines: list):
         return self.shapes_on_chart(symbol=symbol, interval=interval, klines=klines, for_tv=True)
+

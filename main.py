@@ -27,8 +27,8 @@ def check_indicator(symbol: str, interval: str, klines: list):
     logger.debug(shape_infos)
 
 if __name__ == '__main__':
-    symbol = 'ZRXUSDT'
-    interval = '15m'
+    symbol = 'SXPUSDT'
+    interval = '1h'
     ba_client = UMFutures()
     kline_infos = ba_client.klines(symbol=symbol, interval=interval, limit=365)
     klines = []
@@ -39,6 +39,6 @@ if __name__ == '__main__':
         else:
             pass
 
-    check_signal(symbol=symbol, interval=interval, klines=klines)
+    check_indicator(symbol=symbol, interval=interval, klines=klines)
     
 

@@ -18,10 +18,6 @@ class TVIndicator:
     detail_url = 'https://www.bilibili.com/video/BV19k4y1t77h/?share_source=copy_web&vd_source=2bdbf1083d52bf447f49a6e78c8cb443'
     open_source = 'YES'
     indicator_params = {
-        "deep": {
-            "type": "number",
-            "value": 5
-        },
         "long deep": {
             "type": "number",
             "value": 20
@@ -38,21 +34,21 @@ class TVIndicator:
             "type": "bool",
             "value": True
         },
-        "show long HL Line": {
+        "show Long HL Line": {
             "type": "bool",
             "value": True
         },
-        "show short HL Line": {
+        "show Short HL Line": {
             "type": "bool",
             "value": True
         },
         "long HL Line Color": {
             "type": "color",
-            "value": 'rgba(255, 250, 205, 0.4)'
+            "value": 'rgba(244, 164, 96, 0.4)'
         },
         "short HL Line Color": {
             "type": "color",
-            "value": 'rgba(255, 250, 205, 0.4)'
+            "value": 'rgba(192, 192, 192, 0.4)'
         },
         # ,
         # "string": {
@@ -166,7 +162,7 @@ class TVIndicator:
             else:
                 pass
         
-        count = 5
+        count = 2
         while count > 0:
             count = count - 1
             # # 将间隔不够的高低点过滤掉
@@ -219,11 +215,8 @@ class TVIndicator:
             index_1 = 0
             value_2 = np.nan
             index_2 = 0
-            value_3 = np.nan
-            index_3 = 0
             value_1_type = None
             value_2_type = None
-            value_3_type = None
             for index in range(0, len(hl_point_list)):
                 cur_value = hl_point_list[index]
                 if math.isnan(cur_value):
@@ -235,16 +228,12 @@ class TVIndicator:
                     elif math.isnan(value_2):
                         value_2 = cur_value
                         index_2 = index
-                    elif math.isnan(value_3):
-                        value_3 = cur_value
-                        index_3 = index
                     else:
                         index_1 = index_2
-                        index_2 = index_3
-                        index_3 = index
+                        index_2 = index
+  
                         value_1 = value_2
-                        value_2 = value_3
-                        value_3 = cur_value
+                        value_2 = cur_value
                         if value_1 == high_nums[index_1]:
                             value_1_type = 'high'
                         elif value_1 == low_nums[index_1]:
@@ -257,34 +246,46 @@ class TVIndicator:
                             value_2_type = 'low'
                         else:
                             pass
-                        if value_3 == high_nums[index_3]:
-                            value_3_type = 'high'
-                        elif value_3 == low_nums[index_3]:
-                            value_3_type = 'low'
-                        else:
-                            pass
-                        if value_1_type == value_2_type and value_1_type == 'high':
-                            if value_1 > value_2:
-                                hl_point_list[index_2] = np.nan
+                        if count == 1:
+                            # 在连续的高点之间插入低点或者在连续的低点之间插入高点
+                            if value_1_type == value_2_type and value_1_type == 'high':
+                                start_index = index_1 + 1
+                                end_index = index_2 - 1
+                                sub_lows = low_nums[start_index:end_index]
+                                if len(sub_lows) > 0:
+                                    low_value = min(sub_lows)
+                                    sub_index = sub_lows.index(low_value)
+                                    low_index = start_index + sub_index
+                                    hl_point_list[low_index] = low_value
+                                else:
+                                    pass
+                            elif value_1_type == value_2_type and value_1_type == 'low':
+                                start_index = index_1 + 1
+                                end_index = index_2 - 1
+                                sub_highs = high_nums[start_index:end_index]
+                                if len(sub_highs) > 0:
+                                    high_value = max(sub_highs)
+                                    sub_index = sub_highs.index(high_value)
+                                    high_index = start_index + sub_index
+                                    hl_point_list[high_index] = high_value
+                                else:
+                                    pass
                             else:
-                                hl_point_list[index_1] = np.nan
-                        elif value_2_type == value_3_type and value_2_type == 'high':
-                            if value_2 > value_3:
-                                hl_point_list[index_3] = np.nan
+                                pass
+                        else: 
+                            # 将连续的高点合并
+                            if value_1_type == value_2_type and value_1_type == 'high':
+                                if value_1 > value_2:
+                                    hl_point_list[index_2] = np.nan
+                                else:
+                                    hl_point_list[index_1] = np.nan
+                            elif value_1_type == value_2_type and value_1_type == 'low':
+                                if value_1 > value_2:
+                                    hl_point_list[index_1] = np.nan
+                                else:
+                                    hl_point_list[index_2] = np.nan
                             else:
-                                hl_point_list[index_2] = np.nan
-                        elif value_1_type == value_2_type and value_1_type == 'low':
-                            if value_1 > value_2:
-                                hl_point_list[index_1] = np.nan
-                            else:
-                                hl_point_list[index_2] = np.nan
-                        elif value_2_type == value_3_type and value_2_type == 'low':
-                            if value_2 > value_3:
-                                hl_point_list[index_2] = np.nan
-                            else:
-                                hl_point_list[index_3] = np.nan
-                        else:
-                            pass
+                                pass
         
         hl_point_list = hl_point_list[:-deep]
         return hl_point_list
@@ -300,6 +301,10 @@ class TVIndicator:
                 pass
 
         return zigzag_point_list
+    
+    def is_overlap(self, a1, a2, b1, b2):
+            overlap = (min(a1, a2) <= max(b1, b2)) and (max(a1, a2) >= min(b1, b2))
+            return overlap
 
     def find_fair_value_gap_infos(self, data_frame: pd.DataFrame):
         date_nums = data_frame['Date'].tolist()
@@ -331,7 +336,7 @@ class TVIndicator:
                     body_dis = fvg_dis*0.1
                 else:
                     pass
-                if fvg_dis/body_dis < 0.3:
+                if fvg_dis/body_dis < 0.3: # 造成FVG的这根K线的涨跌幅
                     continue
                 else:
                     pass
@@ -343,13 +348,14 @@ class TVIndicator:
                     'high': low_0,
                     'low': high_2,
                     'type': 'supply',
-                    'vaild': True
+                    'vaild': True,
+                    'refill': 0
                 }
                 for next_index in range(index_2, len(date_nums)):
                     next_high = high_nums[next_index]
                     next_date = date_nums[next_index]
                     if next_high > high_2:
-                        if next_high < low_0:
+                        if next_high < (low_0+high_2)/2.0:
                             # fvg_info['low'] = next_high
                             pass
                         else:
@@ -379,13 +385,14 @@ class TVIndicator:
                     'high': low_2,
                     'low': high_0,
                     'type': 'demand',
-                    'vaild': True
+                    'vaild': True,
+                    'refill': 0
                 }
                 for next_index in range(index_2, len(date_nums)):
                     next_low = low_nums[next_index]
                     next_date = date_nums[next_index]
                     if next_low < low_2:
-                        if next_low > high_0:
+                        if next_low > (high_0+low_2)/2.0:
                             # fvg_info['high'] = next_low
                             pass
                         else:
@@ -530,7 +537,7 @@ class TVIndicator:
                             ob_high = ob_info['high']
                             ob_low = ob_info['low']
                             if next_high > ob_low:
-                                if next_high < ob_high:
+                                if next_high < (ob_high+ob_low)/2.0:
                                     # ob_info['low'] = next_high
                                     pass
                                 else:
@@ -633,7 +640,7 @@ class TVIndicator:
                             ob_high = ob_info['high']
                             ob_low = ob_info['low']
                             if next_low < ob_high:
-                                if next_low > ob_low:
+                                if next_low > (ob_low+ob_high)/2.0:
                                     # ob_info['high'] = next_low
                                     pass
                                 else:
@@ -848,7 +855,7 @@ class TVIndicator:
             }
         else:
             pass
-        deep = self.indicator_params['deep']['value']
+        deep = self.indicator_params['long deep']['value']
         deep = int(deep)
         # 计算波段高低点
         hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
@@ -864,16 +871,14 @@ class TVIndicator:
         latest_high = high_nums[-2]
         latest_low = low_nums[-2]
 
-        def is_overlap(a1, a2, b1, b2):
-            overlap = (min(a1, a2) <= max(b2, b1)) and (max(a2, a1) >= min(b1, b2))
-            return overlap
+        
         
         for fvg_info in fvg_infos:
             vaild = fvg_info['vaild']
             high = fvg_info['high']
             low = fvg_info['low']
             type = fvg_info['type']
-            if vaild and is_overlap(latest_high, latest_low, high, low):
+            if vaild and self.is_overlap(latest_high, latest_low, high, low):
                 if type == 'supply':
                     return {
                         'appear': True,
@@ -904,7 +909,7 @@ class TVIndicator:
             high = ob_info['high']
             low = ob_info['low']
             type = ob_info['type']
-            if vaild and is_overlap(latest_high, latest_low, high, low):
+            if vaild and self.is_overlap(latest_high, latest_low, high, low):
                 if type == 'supply':
                     return {
                         'appear': True,
@@ -942,7 +947,7 @@ class TVIndicator:
 
     def shapes_on_chart(self, symbol: str, interval: str, klines: list, for_tv: bool = False):
         data_frame = self.get_data_frame(kline_list=klines)
-        deep = self.indicator_params['deep']['value']
+        deep = self.indicator_params['long deep']['value']
         deep = int(deep)
         # 计算波段高低点
         hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
@@ -1115,15 +1120,51 @@ class TVIndicator:
                 'disableSave': True,
                 'disableUndo': True,
                 'overrides': {
-                    'lineColor': '#FFFFFF',
-                    'lineWidth': 1,
+                    'lineColor': '#F4A460',
+                    'lineWidth': 2,
                     'lineStyle': 0,
-                    'transparency': 80
+                    'transparency': 80,
+                    'rightEnd': 0
                 }
             }
         }
         shape_infos = [zigzag_line_info]
         shape_infos.extend(rectangle_info_list)
+
+        deep = self.indicator_params['short deep']['value']
+        # 计算波段高低点
+        hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
+        zigzag_point_list = self.zigzag_line_point_list(hl_point_list=hl_point_list, data_frame=data_frame)
+        zigzag_point_list_2 = []
+        for p_index in range(0, len(zigzag_point_list)):
+            (p_ts, p_price) = zigzag_point_list[p_index]
+            p_price = float(p_price)
+            if for_tv:
+                p_ts = int(pd.to_datetime(p_ts).value / 10 ** 9)
+            else:
+                pass
+            zigzag_point_list_2.append({'time': p_ts, 'price': p_price})
+        zigzag_point_list_2.append(zigzag_point_list_2[-1])
+        zigzag_line_info = {
+            'shape_name': 'zigzag_line',
+            'shape_type': 'multi_point_shape',
+            'points': zigzag_point_list_2,
+            'options': {
+                'shape': 'path',
+                'lock': True,
+                'disableSelection': True,
+                'disableSave': True,
+                'disableUndo': True,
+                'overrides': {
+                    'lineColor': '#C0C0C0',
+                    'lineWidth': 1,
+                    'lineStyle': 0,
+                    'transparency': 50,
+                    'rightEnd': 0
+                }
+            }
+        }
+        shape_infos.append(zigzag_line_info)
 
         return shape_infos
 
