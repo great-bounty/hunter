@@ -17,7 +17,7 @@ class TVIndicator:
     deploy_version = '100.100.100'
     detail_url = 'https://www.bilibili.com/video/BV19k4y1t77h/?share_source=copy_web&vd_source=2bdbf1083d52bf447f49a6e78c8cb443'
     open_source = 'YES'
-    indicator_params = {
+    input_params = {
         "long deep": {
             "type": "number",
             "value": 20
@@ -26,30 +26,30 @@ class TVIndicator:
             "type": "number",
             "value": 5
         },
-        "show FVG": {
-            "type": "bool",
-            "value": True
-        },
-        "show OB": {
-            "type": "bool",
-            "value": True
-        },
-        "show Long HL Line": {
-            "type": "bool",
-            "value": True
-        },
-        "show Short HL Line": {
-            "type": "bool",
-            "value": True
-        },
-        "long HL Line Color": {
-            "type": "color",
-            "value": 'rgba(244, 164, 96, 0.4)'
-        },
-        "short HL Line Color": {
-            "type": "color",
-            "value": 'rgba(192, 192, 192, 0.4)'
-        },
+        # "show FVG": {
+        #     "type": "bool",
+        #     "value": True
+        # },
+        # "show OB": {
+        #     "type": "bool",
+        #     "value": True
+        # },
+        # "show Long HL Line": {
+        #     "type": "bool",
+        #     "value": True
+        # },
+        # "show Short HL Line": {
+        #     "type": "bool",
+        #     "value": True
+        # },
+        # "long HL Line Color": {
+        #     "type": "color",
+        #     "value": 'rgba(244, 164, 96, 0.4)'
+        # },
+        # "short HL Line Color": {
+        #     "type": "color",
+        #     "value": 'rgba(192, 192, 192, 0.4)'
+        # },
         # ,
         # "string": {
         #     "type": "string",
@@ -301,6 +301,74 @@ class TVIndicator:
                 pass
 
         return zigzag_point_list
+    
+    def find_momentum_shift(self, data_frame: pd.DataFrame, hl_point_list: list):
+        date_nums = data_frame['Date'].tolist()
+        high_nums = data_frame['High'].tolist()
+        low_nums = data_frame['Low'].tolist()
+        break_line_infos = []
+        point_list = []
+        point_index_list = []
+        for index in range(0, len(hl_point_list)):
+            value = hl_point_list[index]
+            if math.isnan(value):
+                pass
+            else:
+                point_list.append(value)
+                point_index_list.append(index)
+                if len(point_list) < 4:
+                    continue
+                else:
+                    if len(point_list) == 4:
+                        pass
+                    else:
+                        point_list.pop(0)
+                        point_index_list.pop(0)
+                    point_0 = point_list[0]
+                    point_1 = point_list[1]
+                    point_2 = point_list[2]
+                    point_3 = point_list[3]
+                    index_0 = point_index_list[0]
+                    index_1 = point_index_list[1]
+                    index_2 = point_index_list[2]
+                    index_3 = point_index_list[3]
+                    have_shift = False
+                    shift_type = None
+                    if point_1 < point_0 and point_2 > point_0 and point_3 < point_1: # 向下转换
+                        have_shift = True
+                        shift_type = 'down_shift'
+                    elif point_1 > point_0  and point_2 < point_0 and point_3 > point_1: # 向上转换
+                        have_shift = True
+                        shift_type = 'up_shift'
+                    else:
+                        pass
+                    if have_shift:
+                        start_date = date_nums[index_1]
+                        end_date = None
+                        end_index = None
+                        for break_index in range(index_2, index_3):
+                            high_value = high_nums[break_index]
+                            low_value = low_nums[break_index]
+                            if point_1 > low_value and point_1 < high_value:
+                                end_date = date_nums[break_index]
+                                end_index = break_index
+                                break
+                            else:
+                                pass
+                        if end_date is not None:
+                            break_line_infos.append({
+                                'start_index': index_1,
+                                'end_index': end_index,
+                                'start_date': start_date,
+                                'end_date': end_date,
+                                'price': point_1,
+                                'shift_type': shift_type
+                            })
+                        else:
+                            pass
+                    else:
+                        pass
+        return break_line_infos
     
     def is_overlap(self, a1, a2, b1, b2):
             overlap = (min(a1, a2) <= max(b1, b2)) and (max(a1, a2) >= min(b1, b2))
@@ -855,7 +923,7 @@ class TVIndicator:
             }
         else:
             pass
-        deep = self.indicator_params['long deep']['value']
+        deep = self.input_params['long deep']['value']
         deep = int(deep)
         # 计算波段高低点
         hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
@@ -947,7 +1015,7 @@ class TVIndicator:
 
     def shapes_on_chart(self, symbol: str, interval: str, klines: list, for_tv: bool = False):
         data_frame = self.get_data_frame(kline_list=klines)
-        deep = self.indicator_params['long deep']['value']
+        deep = self.input_params['long deep']['value']
         deep = int(deep)
         # 计算波段高低点
         hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
@@ -1131,7 +1199,7 @@ class TVIndicator:
         shape_infos = [zigzag_line_info]
         shape_infos.extend(rectangle_info_list)
 
-        deep = self.indicator_params['short deep']['value']
+        deep = self.input_params['short deep']['value']
         # 计算波段高低点
         hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
         zigzag_point_list = self.zigzag_line_point_list(hl_point_list=hl_point_list, data_frame=data_frame)
@@ -1165,6 +1233,39 @@ class TVIndicator:
             }
         }
         shape_infos.append(zigzag_line_info)
+
+        break_line_infos = self.find_momentum_shift(data_frame=data_frame, hl_point_list=hl_point_list)
+        for line_index in range(0, len(break_line_infos)):
+            line_info = break_line_infos[line_index]
+            p_price = float(line_info['price'])
+            if for_tv:
+                p_start_ts = int(pd.to_datetime(line_info['start_date']).value / 10 ** 9)
+                p_end_ts = int(pd.to_datetime(line_info['end_date']).value / 10 ** 9)
+            else:
+                p_start_ts = line_info['start_date']
+                p_end_ts = line_info['end_date']
+            if line_info['shift_type'] == 'down_shift':
+                lineColor = '#FF0000'
+            else:
+                lineColor = '#00FF00'
+            line_shape_info = {
+                'shape_name': 'horizontal_line',
+                'shape_type': 'multi_point_shape',
+                'points': [{'time': p_start_ts, 'price': p_price}, {'time': p_end_ts, 'price': p_price}],
+                'options': {
+                    'shape': 'trend_line',
+                    'lock': True,
+                    'disableSelection': True,
+                    'disableSave': True,
+                    'disableUndo': True,
+                    'overrides': {
+                        'linecolor': lineColor,
+                        'linewidth': 1,
+                        'linestyle': 2,
+                    }
+                }
+            }
+            shape_infos.append(line_shape_info)
 
         return shape_infos
 

@@ -17,7 +17,7 @@ class SignalMonitor:
     deploy_version = '1.0.0'
     detail_url = 'https://www.bilibili.com/video/BV19k4y1t77h/?share_source=copy_web&vd_source=2bdbf1083d52bf447f49a6e78c8cb443'
     open_source = 'YES'
-    signal_params = {
+    input_params = {
         "long deep": {
             "type": "number",
             "value": 20
@@ -844,7 +844,7 @@ class SignalMonitor:
             }
         else:
             pass
-        deep = self.signal_params['long deep']['value']
+        deep = self.input_params['long deep']['value']
         deep = int(deep)
         # 计算波段高低点
         hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
@@ -938,7 +938,7 @@ class SignalMonitor:
 
     def shapes_on_chart(self, symbol: str, interval: str, klines: list, for_tv: bool = False):
         data_frame = self.get_data_frame(kline_list=klines)
-        deep = self.signal_params['long deep']['value']
+        deep = self.input_params['long deep']['value']
         deep = int(deep)
         # 计算波段高低点
         hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
@@ -1121,7 +1121,7 @@ class SignalMonitor:
         shape_infos = [zigzag_line_info]
         shape_infos.extend(rectangle_info_list)
 
-        deep = self.signal_params['short deep']['value']
+        deep = self.input_params['short deep']['value']
         # 计算波段高低点
         hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
         zigzag_point_list = self.zigzag_line_point_list(hl_point_list=hl_point_list, data_frame=data_frame)
