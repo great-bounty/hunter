@@ -290,6 +290,81 @@ class TVIndicator:
         hl_point_list = hl_point_list[:-deep]
         return hl_point_list
 
+    def angle_with_horizontal(self, p1, p2):
+        """
+        计算两个点连成的线与水平线的夹角
+        :param p1: 第一个点的坐标，格式为 (index1, price1)
+        :param p2: 第二个点的坐标，格式为 (index2, price2)
+        :return: 两个点连成的线与水平线的夹角，单位为角度
+        """
+        dx = p2[0] - p1[0]
+        dy = p2[1] - p1[1]
+        degree = math.degrees(math.atan2(dy, dx))
+        # > 60 或者 < -60
+        return degree
+
+    def calculate_average_height(self, point_list):
+        """
+        计算高低点连成的线段的平均高度
+        """
+        total_height = 0
+        num_segments = len(point_list) - 1
+        for i in range(num_segments):
+            # 计算线段高度
+            height = abs(point_list[i+1][1] - point_list[i][1])
+            # 累加线段高度
+            total_height += height
+        # 计算平均高度
+        average_height = total_height / num_segments
+
+        return average_height
+
+    def calculate_average_candle_height(self, kline_data: list):
+        latest_data = kline_data.pop();
+        latest_data = kline_data.pop();
+        """
+        计算一组K线的平均实体高度
+        :param kline_data: 一组K线的TOHLCV数组
+        :return: 平均实体高度
+        """
+        total_height = 0
+        num_candles = len(kline_data)
+        for i in range(num_candles):
+            # 计算实体高度
+            open = kline_data[i][1]
+            close = kline_data[i][4]
+            height = abs(open - close)
+            # 累加实体高度
+            total_height += height
+        # 计算平均实体高度
+        average_height = total_height / num_candles
+        # 计算最后一个K线实体高度相对于平均实体高度的倍数
+        l_open = latest_data[1]
+        l_close = latest_data[4]
+        l_height = abs(l_open - l_close)
+        high_rate = l_height/average_height
+
+        return (average_height, high_rate)
+
+    def calculate_move_speed(self, p1, p2):
+        dx = p2[0] - p1[0]
+        dy = p2[1] - p1[1]
+        speed = dy/dx
+        
+        return speed
+    
+    def zigzag_line_index_price_point_list(self, hl_point_list: list, data_frame: pd.DataFrame):
+        zigzag_point_list = []
+        for p_index in range(0, len(hl_point_list)):
+            p_value = hl_point_list[p_index]
+            date_value = data_frame['Date'].iloc[p_index]
+            if math.isnan(p_value) == False:
+                zigzag_point_list.append((p_index, p_value))
+            else:
+                pass
+
+        return zigzag_point_list
+    
     def zigzag_line_point_list(self, hl_point_list: list, data_frame: pd.DataFrame):
         zigzag_point_list = []
         for p_index in range(0, len(hl_point_list)):
@@ -301,37 +376,59 @@ class TVIndicator:
                 pass
 
         return zigzag_point_list
-    
-    def find_momentum_shift(self, data_frame: pd.DataFrame, hl_point_list: list):
+
+    def calculate_point_angle(self, point_list: list):
+        '''
+        其中，point_list为一个二维数组，每个元素表示一个顶点的坐标，例如[[x1,y1],[x2,y2],...]。
+        函数返回一个角度列表，其中每个元素表示对应顶点夹角的角度值。
+        '''
+        angle_list = []
+        for i in range(1, len(point_list)-1):
+            prev_point = point_list[i-1]
+            current_point = point_list[i]
+            next_point = point_list[i+1]
+            # 计算向量
+            vec1 = self.angle_with_horizontal(prev_point, current_point)
+            vec2 = self.angle_with_horizontal(current_point, next_point)
+            # 计算夹角
+            print(f'{i}----, vec1----{vec1}, vec2----{vec2} --{prev_point}--{current_point}--{next_point}')
+            angle_list.append(i)
+        return angle_list
+
+    def find_strong_break(self, data_frame: pd.DataFrame, hl_point_list_small: list): # 识别强势突破
         date_nums = data_frame['Date'].tolist()
         high_nums = data_frame['High'].tolist()
+        open_nums = data_frame['Open'].tolist()
+        close_nums = data_frame['Close'].tolist()
         low_nums = data_frame['Low'].tolist()
-        break_line_infos = []
-        point_list = []
-        point_index_list = []
-        for index in range(0, len(hl_point_list)):
-            value = hl_point_list[index]
+
+        strong_infos = []
+        # 如果发生突破的那一根K线的高度超过被突破区间的50%, 则视为强势突破
+        point_list_small = []
+        point_index_list_small = []
+        for index in range(0, len(hl_point_list_small)):
+            value = hl_point_list_small[index]
             if math.isnan(value):
                 pass
             else:
-                point_list.append(value)
-                point_index_list.append(index)
-                if len(point_list) < 4:
+                point_list_small.append(value)
+                point_index_list_small.append(index)
+                if len(point_list_small) < 4:
                     continue
                 else:
-                    if len(point_list) == 4:
+                    if len(point_list_small) == 4:
                         pass
                     else:
-                        point_list.pop(0)
-                        point_index_list.pop(0)
-                    point_0 = point_list[0]
-                    point_1 = point_list[1]
-                    point_2 = point_list[2]
-                    point_3 = point_list[3]
-                    index_0 = point_index_list[0]
-                    index_1 = point_index_list[1]
-                    index_2 = point_index_list[2]
-                    index_3 = point_index_list[3]
+                        point_list_small.pop(0)
+                        point_index_list_small.pop(0)
+                    point_0 = point_list_small[0]
+                    point_1 = point_list_small[1]
+                    point_2 = point_list_small[2]
+                    point_3 = point_list_small[3]
+                    index_0 = point_index_list_small[0]
+                    index_1 = point_index_list_small[1]
+                    index_2 = point_index_list_small[2]
+                    index_3 = point_index_list_small[3]
                     have_shift = False
                     shift_type = None
                     if point_1 < point_0 and point_2 > point_0 and point_3 < point_1: # 向下转换
@@ -343,7 +440,6 @@ class TVIndicator:
                     else:
                         pass
                     if have_shift:
-                        start_date = date_nums[index_1]
                         end_date = None
                         end_index = None
                         for break_index in range(index_2, index_3):
@@ -356,18 +452,161 @@ class TVIndicator:
                             else:
                                 pass
                         if end_date is not None:
-                            break_line_infos.append({
-                                'start_index': index_1,
-                                'end_index': end_index,
-                                'start_date': start_date,
-                                'end_date': end_date,
-                                'price': point_1,
-                                'shift_type': shift_type
-                            })
+                            stt_index = end_index
+                            while stt_index > index_2:
+                                stt_index = stt_index - 1
+                                open_value = open_nums[stt_index]
+                                close_value = close_nums[stt_index]
+                                if shift_type == 'up_shift': # 向上突破找连续的阳线
+                                    if close_value < open_value: # 阴线
+                                        stt_index = stt_index + 1
+                                        end_high = high_nums[end_index]
+                                        start_low = low_nums[stt_index]
+                                        range_value = point_1 - point_2
+                                        strong_value = end_high - start_low
+                                        if strong_value > range_value*0.5:
+                                            # 出现强势转换
+                                            strong_infos.append({
+                                                'index': stt_index,
+                                                'date': date_nums[stt_index],
+                                                'price': start_low,
+                                                'end_index': end_index,
+                                                'end_date': date_nums[end_index],
+                                                'end_price': end_high,
+                                                'type': 'sell'
+                                            });
+                                        else:
+                                            pass
+                                        break
+                                    else:
+                                        pass
+                                elif shift_type == 'down_shift': #向下突破找连续的阴线
+                                    if close_value > open_value: # 阳线
+                                        stt_index = stt_index + 1
+                                        start_high = high_nums[stt_index]
+                                        end_low = low_nums[end_index]
+                                        range_value = point_2 - point_1
+                                        strong_value = start_high - end_low
+                                        if strong_value > range_value*0.5:
+                                            # 出现强势转换
+                                            strong_infos.append({
+                                                'start_index': stt_index,
+                                                'start_date': date_nums[stt_index],
+                                                'start_price': start_high,
+                                                'end_index': end_index,
+                                                'end_date': date_nums[end_index],
+                                                'end_price': end_low,
+                                                'type': 'buy'
+                                            });
+                                        else:
+                                            pass
+                                        break
+                                    else:
+                                        pass
+                                else:
+                                    pass
                         else:
                             pass
                     else:
                         pass
+
+        return strong_infos
+    
+    def find_momentum_shift(self, data_frame: pd.DataFrame, hl_point_list_big: list, hl_point_list_small: list):
+        date_nums = data_frame['Date'].tolist()
+        high_nums = data_frame['High'].tolist()
+        low_nums = data_frame['Low'].tolist()
+        break_line_infos = []
+        
+        point_list_big = []
+        point_index_list_big = []
+        for index_big in range(0, len(hl_point_list_big)):
+            value_big = hl_point_list_big[index_big]
+            if math.isnan(value_big):
+                pass
+            else:
+                point_list_big.append(value_big)
+                point_index_list_big.append(index_big)
+                if len(point_list_big) < 3:
+                    continue
+                else:
+                    if len(point_list_big) == 3:
+                        pass
+                    else:
+                        point_list_big.pop(0)
+                        point_index_list_big.pop(0)
+                    
+                    point_big_0 = point_list_big[0]
+                    point_big_1 = point_list_big[1]
+                    point_big_2 = point_list_big[2]
+                    index_big_0 = point_index_list_big[0]
+                    index_big_1 = point_index_list_big[1]
+                    index_big_2 = point_index_list_big[2]
+                    point_small_low = np.nan
+                    if point_big_1 > point_big_0: # 大周期向上
+                        # 找到最高点之前的最后一个低点
+                        index_small = index_big_1 - 1
+                        while index_small > index_big_0:
+                            index_small = index_small - 1
+                            point_small_low = hl_point_list_small[index_small]
+                            if math.isnan(point_small_low):
+                                continue
+                            else:
+                                break
+                        if math.isnan(point_small_low):
+                            continue
+                        else:
+                            # 找到向下突破最后一个低点K线
+                            for break_index in range(index_big_1, index_big_2):
+                                high_value = high_nums[break_index]
+                                low_value = low_nums[break_index]
+                                if point_small_low > low_value and point_small_low < high_value:
+                                    # 出现动量转换
+                                    break_line_infos.append({
+                                        'start_index': index_small,
+                                        'end_index': break_index,
+                                        'start_date': date_nums[index_small],
+                                        'end_date': date_nums[break_index],
+                                        'price': point_small_low,
+                                        'shift_type': 'down_shift'
+                                    })
+                                    break
+                                else:
+                                    pass
+                    elif point_big_1 < point_big_0: # 大周期向下
+                        # 找到最低点之前的最后一个高点
+                        point_small_high = np.nan
+                        index_small = index_big_1 - 1
+                        while index_small > index_big_0:
+                            index_small = index_small - 1
+                            point_small_high = hl_point_list_small[index_small]
+                            if math.isnan(point_small_high):
+                                continue
+                            else:
+                                break
+                        if math.isnan(point_small_high):
+                            continue
+                        else:
+                            # 找到向上突破最后一个高点K线
+                            for break_index in range(index_big_1, index_big_2):
+                                high_value = high_nums[break_index]
+                                low_value = low_nums[break_index]
+                                if point_small_high > low_value and point_small_high < high_value:
+                                    # 出现动量转换
+                                    break_line_infos.append({
+                                        'start_index': index_small,
+                                        'end_index': break_index,
+                                        'start_date': date_nums[index_small],
+                                        'end_date': date_nums[break_index],
+                                        'price': point_small_high,
+                                        'shift_type': 'up_shift'
+                                    })
+                                    break
+                                else:
+                                    pass
+                    else:
+                        pass
+        
         return break_line_infos
     
     def is_overlap(self, a1, a2, b1, b2):
@@ -730,6 +969,8 @@ class TVIndicator:
     
     def find_fair_value_gap_and_order_block_infos(self, data_frame: pd.DataFrame, zigzag_point_list: list):
         fvg_infos = self.find_fair_value_gap_infos(data_frame=data_frame)
+        # 优化FVG只显示又动量转换区域的fvg
+        # 计算订单块
         ob_infos = self.find_order_block_infos(data_frame=data_frame, zigzag_point_list=zigzag_point_list)
 
         return (fvg_infos, ob_infos)
@@ -859,6 +1100,8 @@ class TVIndicator:
             title=title,
             yaxis_title=symbol
         )
+        line_colors = ['#C0C0C0', '#F4A460']
+        line_widths = [1,2]
         for sp_info in tv_shape_infos:
             shape_name = sp_info['shape_name']
             if shape_name == 'smc_rectangle':
@@ -897,8 +1140,8 @@ class TVIndicator:
                     x=x_list,
                     y=y_list,
                     line=dict(
-                        color='gray',
-                        width=1
+                        color=line_colors.pop(),
+                        width=line_widths.pop()
                     ),
                     mode="lines",
                     name="zigzag",
@@ -928,6 +1171,10 @@ class TVIndicator:
         # 计算波段高低点
         hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
         zigzag_point_list = self.zigzag_line_point_list(hl_point_list=hl_point_list, data_frame=data_frame)
+        zigzag_point_index_list = self.zigzag_line_index_price_point_list(hl_point_list=hl_point_list, data_frame=data_frame)
+        zigzag_point_angle_list = self.calculate_point_angle(point_list=zigzag_point_index_list)
+        print(f'zigzag_point_angle_list---->{zigzag_point_angle_list}')
+
         (fvg_infos, ob_infos) = self.find_fair_value_gap_and_order_block_infos(data_frame=data_frame, zigzag_point_list=zigzag_point_list)
         open_nums = data_frame['Open'].tolist()
         close_nums = data_frame['Close'].tolist()
@@ -939,8 +1186,6 @@ class TVIndicator:
         latest_high = high_nums[-2]
         latest_low = low_nums[-2]
 
-        
-        
         for fvg_info in fvg_infos:
             vaild = fvg_info['vaild']
             high = fvg_info['high']
@@ -1018,9 +1263,9 @@ class TVIndicator:
         deep = self.input_params['long deep']['value']
         deep = int(deep)
         # 计算波段高低点
-        hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
-        zigzag_point_list = self.zigzag_line_point_list(hl_point_list=hl_point_list, data_frame=data_frame)
-        (fvg_infos, ob_infos) = self.find_fair_value_gap_and_order_block_infos(data_frame=data_frame, zigzag_point_list=zigzag_point_list)
+        hl_point_list_big = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
+        zigzag_point_list_big = self.zigzag_line_point_list(hl_point_list=hl_point_list_big, data_frame=data_frame)
+        (fvg_infos, ob_infos) = self.find_fair_value_gap_and_order_block_infos(data_frame=data_frame, zigzag_point_list=zigzag_point_list_big)
 
         yellow_color = '#FFB90F'
         red_color = '#FF3030'
@@ -1043,7 +1288,7 @@ class TVIndicator:
             type = fvg_info['type']
             if type == 'supply':
                 rectangle_info = {
-                    'shape_name': 'smc_rectangle',
+                    'shape_name': 'smc_fvg_rectangle',
                     'shape_type': 'multi_point_shape',
                     'points': [{'time': start_ts, 'price': high},
                                {'time': end_ts, 'price': low}],
@@ -1069,7 +1314,7 @@ class TVIndicator:
                 rectangle_info_list.append(rectangle_info)
             else:
                 rectangle_info = {
-                    'shape_name': 'smc_rectangle',
+                    'shape_name': 'smc_fvg_rectangle',
                     'shape_type': 'multi_point_shape',
                     'points': [{'time': start_ts, 'price': high},
                                {'time': end_ts, 'price': low}],
@@ -1116,7 +1361,7 @@ class TVIndicator:
             type = ob_info['type']
             if type == 'supply':
                 rectangle_info = {
-                    'shape_name': 'smc_rectangle',
+                    'shape_name': 'smc_ob_rectangle',
                     'shape_type': 'multi_point_shape',
                     'points': [{'time': start_ts, 'price': high},
                                {'time': end_ts, 'price': low}],
@@ -1142,7 +1387,7 @@ class TVIndicator:
                 rectangle_info_list.append(rectangle_info)
             else:
                 rectangle_info = {
-                    'shape_name': 'smc_rectangle',
+                    'shape_name': 'smc_ob_rectangle',
                     'shape_type': 'multi_point_shape',
                     'points': [{'time': start_ts, 'price': high},
                                {'time': end_ts, 'price': low}],
@@ -1168,8 +1413,8 @@ class TVIndicator:
                 rectangle_info_list.append(rectangle_info)
 
         zigzag_point_list_2 = []
-        for p_index in range(0, len(zigzag_point_list)):
-            (p_ts, p_price) = zigzag_point_list[p_index]
+        for p_index in range(0, len(zigzag_point_list_big)):
+            (p_ts, p_price) = zigzag_point_list_big[p_index]
             p_price = float(p_price)
             if for_tv:
                 p_ts = int(pd.to_datetime(p_ts).value / 10 ** 9)
@@ -1201,11 +1446,11 @@ class TVIndicator:
 
         deep = self.input_params['short deep']['value']
         # 计算波段高低点
-        hl_point_list = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
-        zigzag_point_list = self.zigzag_line_point_list(hl_point_list=hl_point_list, data_frame=data_frame)
+        hl_point_list_small = self.find_high_low_point_list(data_frame=data_frame, deep=deep)
+        zigzag_point_list_small = self.zigzag_line_point_list(hl_point_list=hl_point_list_small, data_frame=data_frame)
         zigzag_point_list_2 = []
-        for p_index in range(0, len(zigzag_point_list)):
-            (p_ts, p_price) = zigzag_point_list[p_index]
+        for p_index in range(0, len(zigzag_point_list_small)):
+            (p_ts, p_price) = zigzag_point_list_small[p_index]
             p_price = float(p_price)
             if for_tv:
                 p_ts = int(pd.to_datetime(p_ts).value / 10 ** 9)
@@ -1234,7 +1479,7 @@ class TVIndicator:
         }
         shape_infos.append(zigzag_line_info)
 
-        break_line_infos = self.find_momentum_shift(data_frame=data_frame, hl_point_list=hl_point_list)
+        break_line_infos = self.find_momentum_shift(data_frame=data_frame, hl_point_list_big=hl_point_list_big, hl_point_list_small=hl_point_list_small)
         for line_index in range(0, len(break_line_infos)):
             line_info = break_line_infos[line_index]
             p_price = float(line_info['price'])
@@ -1266,7 +1511,9 @@ class TVIndicator:
                 }
             }
             shape_infos.append(line_shape_info)
-
+        
+        # 过滤fvg,只留下动量转换区域的fvg
+        
         return shape_infos
 
     def tv_shape_infos(self, symbol: str, interval: str, klines: list):

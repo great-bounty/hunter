@@ -23,11 +23,11 @@ def check_signal(symbol: str, interval: str, klines: list):
 
 def check_indicator(symbol: str, interval: str, klines: list):
     indicator = ICTIndicator()
-    shape_infos = indicator.tv_shape_infos(symbol=symbol, interval=interval, klines=klines)
+    shape_infos = indicator.check_signal(symbol=symbol, interval=interval, klines=klines)
     logger.debug(shape_infos)
 
 if __name__ == '__main__':
-    symbol = 'SXPUSDT'
+    symbol = 'ARBUSDT'
     interval = '1h'
     ba_client = UMFutures()
     kline_infos = ba_client.klines(symbol=symbol, interval=interval, limit=365)
